@@ -65,17 +65,37 @@ async function createDocument(formData: FormData) {
     return;
   }
 
-  // タイトル未入力の場合は、本文（またはアップロードされたファイルの内容）から自動生成
-  if (!title) {
-    title = await generateTitleFromContent(content);
-  }
+  // AI によるタイトル / カテゴリ / 要約・タグ生成
+  // 本番環境で OpenAI のキーが未設定でも「ボタンが無反応」に見えないよう、
+  // すべて try/catch で囲んでフォールバックする
+  let summary = "";
+  let tags: string[] = [];
 
-  // カテゴリ未入力の場合は、本文からカテゴリ名を自動生成
-  if (!category) {
-    category = await generateCategoryFromContent(content);
-  }
+  try {
+    // タイトル未入力の場合は、本文（またはアップロードされたファイルの内容）から自動生成
+    if (!title) {
+      title = await generateTitleFromContent(content);
+    }
 
-  const { summary, tags } = await generateSummaryAndTags(content);
+    // カテゴリ未入力の場合は、本文からカテゴリ名を自動生成
+    if (!category) {
+      category = await generateCategoryFromContent(content);
+    }
+
+    const generated = await generateSummaryAndTags(content);
+    summary = generated.summary;
+    tags = generated.tags;
+  } catch (e) {
+    console.error("AI generate error in createDocument:", e);
+    // フォールバック: タイトル / カテゴリが空なら素朴な値を入れておく
+    if (!title) {
+      title = content.slice(0, 30) || "無題ドキュメント";
+    }
+    if (!category) {
+      category = "未分類";
+    }
+    // summary / tags は空のままでも保存は続行する
+  }
 
   const { data, error } = await supabase
     .from("documents")
