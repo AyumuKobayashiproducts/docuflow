@@ -25,6 +25,19 @@ function formatJstDateTime(value: string | null): string | null {
   return `${year}/${month}/${day} ${hour}:${minute}`;
 }
 
+// カテゴリごとのバッジカラー（SaaS っぽく）
+function getCategoryBadgeClasses(category: string): string {
+  const cat = category.trim();
+  if (cat.includes("仕様")) return "bg-sky-50 text-sky-700 border border-sky-100";
+  if (cat.includes("議事") || cat.includes("MTG"))
+    return "bg-amber-50 text-amber-700 border border-amber-100";
+  if (cat.includes("企画") || cat.includes("計画"))
+    return "bg-violet-50 text-violet-700 border border-violet-100";
+  if (cat.includes("提案") || cat.includes("レポート"))
+    return "bg-emerald-50 text-emerald-700 border border-emerald-100";
+  return "bg-slate-100 text-slate-700 border border-slate-200";
+}
+
 // 「直近30日で作成されたドキュメント数」を数えるためのヘルパー
 // Date.now() の呼び出しはここ（コンポーネント外）に閉じ込めて React の純粋性ルールを守る
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -251,6 +264,28 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     return Array.from(counter.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3);
   })();
   const maxCategoryCount = categoryStats.length > 0 ? categoryStats[0][1] : 0;
+
+  // ドキュメントごとのコメント件数（カードのミニ情報用）
+  const commentCountMap = new Map<string, number>();
+  if (allDocuments.length > 0) {
+    const documentIds = allDocuments.map((d) => d.id);
+    const { data: comments, error: commentsError } = await supabase
+      .from("document_comments")
+      .select("document_id")
+      .in("document_id", documentIds);
+
+    if (commentsError) {
+      console.error(commentsError);
+    } else if (comments) {
+      for (const row of comments as { document_id: string | null }[]) {
+        if (!row.document_id) continue;
+        commentCountMap.set(
+          row.document_id,
+          (commentCountMap.get(row.document_id) ?? 0) + 1
+        );
+      }
+    }
+  }
 
   // document_id ごとの「作成日時」（create_document アクションの最初の時刻）をマップ化
   const documentCreatedAtMap = new Map<string, string>();
@@ -616,7 +651,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                         {doc.title}
                       </Link>
                       {doc.category && (
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getCategoryBadgeClasses(
+                            doc.category
+                          )}`}
+                        >
                           {doc.category}
                         </span>
                       )}
@@ -636,6 +675,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                           </time>
                         );
                       })()}
+                      {doc.share_token ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                          🔗 共有中
+                        </span>
+                      ) : null}
                       <div className="flex gap-1">
                         <form action={togglePinned}>
                           <input type="hidden" name="id" value={doc.id} />
@@ -694,27 +738,57 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                   )}
 
                   {Array.isArray(doc.tags) && doc.tags.length > 0 && (
-                  <div className="mt-auto flex flex-wrap gap-1">
-                    {doc.tags.map((tag) => {
-                      const isActive =
-                        query &&
-                        tag.toLowerCase() === query.toLowerCase().trim();
-                      return (
-                        <Link
-                          key={tag}
-                          href={`/app?q=${encodeURIComponent(tag)}`}
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${
-                            isActive
-                              ? "bg-emerald-50 text-emerald-700 ring-emerald-300"
-                              : "bg-slate-50 text-slate-600 ring-slate-200"
-                          }`}
-                        >
-                          {tag}
-                        </Link>
-                      );
-                    })}
-                  </div>
+                    <div className="mt-auto flex flex-wrap gap-1">
+                      {doc.tags.map((tag) => {
+                        const isActive =
+                          query &&
+                          tag.toLowerCase() === query.toLowerCase().trim();
+                        return (
+                          <Link
+                            key={tag}
+                            href={`/app?q=${encodeURIComponent(tag)}`}
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${
+                              isActive
+                                ? "bg-emerald-50 text-emerald-700 ring-emerald-300"
+                                : "bg-slate-50 text-slate-600 ring-slate-200"
+                            }`}
+                          >
+                            {tag}
+                          </Link>
+                        );
+                      })}
+                    </div>
                   )}
+
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+                    <div className="flex items-center gap-2">
+                      {Array.isArray(doc.tags) && doc.tags.length > 0 && (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-slate-400">🏷</span>
+                          <span>{doc.tags.length} 個のタグ</span>
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="text-slate-400">✍️</span>
+                        <span>
+                          {doc.raw_content
+                            ? `${doc.raw_content.length.toLocaleString("ja-JP")} 文字`
+                            : "0 文字"}
+                        </span>
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="text-slate-400">💬</span>
+                        <span>
+                          {(commentCountMap.get(doc.id) ?? 0).toLocaleString(
+                            "ja-JP"
+                          )}{" "}
+                          件
+                        </span>
+                      </span>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
