@@ -1,0 +1,692 @@
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { supabase } from "@/lib/supabaseClient";
+import { logActivity } from "@/lib/activityLog";
+import { Logo } from "@/components/Logo";
+import { UserMenu } from "./UserMenu";
+
+type Document = {
+  id: string;
+  title: string;
+  category: string | null;
+  raw_content: string | null;
+  summary: string | null;
+  tags: string[] | null;
+  created_at: string;
+  user_id: string | null;
+  is_favorite: boolean;
+  is_pinned: boolean;
+};
+
+type ActivityLog = {
+  id: string;
+  action: string;
+  document_id: string | null;
+  document_title: string | null;
+  created_at: string;
+};
+
+async function toggleFavorite(formData: FormData) {
+  "use server";
+
+  const id = String(formData.get("id") ?? "");
+  const next = String(formData.get("next") ?? "") === "true";
+  if (!id) return;
+
+  const { error } = await supabase
+    .from("documents")
+    .update({ is_favorite: next })
+    .eq("id", id);
+
+  if (error) {
+    console.error("toggleFavorite error:", error);
+    throw new Error(`Failed to update favorite: ${error.message}`);
+  }
+
+  await logActivity("toggle_favorite", {
+    documentId: id,
+    details: next ? "on" : "off",
+  });
+
+  revalidatePath("/app");
+}
+
+async function togglePinned(formData: FormData) {
+  "use server";
+
+  const id = String(formData.get("id") ?? "");
+  const next = String(formData.get("next") ?? "") === "true";
+  if (!id) return;
+
+  const { error } = await supabase
+    .from("documents")
+    .update({ is_pinned: next })
+    .eq("id", id);
+
+  if (error) {
+    console.error("togglePinned error:", error);
+    throw new Error(`Failed to update pinned: ${error.message}`);
+  }
+
+  await logActivity("toggle_pinned", {
+    documentId: id,
+    details: next ? "on" : "off",
+  });
+
+  revalidatePath("/app");
+}
+
+export async function deleteAccount() {
+  "use server";
+  console.warn(
+    "[deleteAccount] この関数は app/app/accountActions.ts に移動しました。新しい設定ページから使用してください。"
+  );
+}
+
+type DashboardProps = {
+  searchParams: Promise<{
+    q?: string;
+    category?: string;
+    sort?: string;
+    onlyFavorites?: string;
+    onlyPinned?: string;
+  }>;
+};
+
+export function filterDocuments(
+  documents: Document[],
+  query?: string,
+  category?: string,
+  onlyFavorites?: boolean,
+  onlyPinned?: boolean
+) {
+  const q = query?.toLowerCase().trim() ?? "";
+  const normalizedCategory = category?.trim() ?? "";
+
+  return documents.filter((doc) => {
+    const inCategory =
+      !normalizedCategory || doc.category === normalizedCategory;
+
+    const inText =
+      !q ||
+      doc.title.toLowerCase().includes(q) ||
+      (doc.summary ?? "").toLowerCase().includes(q) ||
+      (doc.raw_content ?? "").toLowerCase().includes(q) ||
+      (Array.isArray(doc.tags)
+        ? doc.tags.some((tag) => tag.toLowerCase().includes(q))
+        : false);
+
+    const favoriteOk = !onlyFavorites || doc.is_favorite;
+    const pinnedOk = !onlyPinned || doc.is_pinned;
+
+    return inCategory && inText && favoriteOk && pinnedOk;
+  });
+}
+
+function describeActivity(log: ActivityLog): string {
+  switch (log.action) {
+    case "create_document":
+      return "ドキュメントを作成しました";
+    case "update_document":
+      return "ドキュメントを更新しました";
+    case "delete_document":
+      return "ドキュメントを削除しました";
+    case "toggle_favorite":
+      return "お気に入り状態を変更しました";
+    case "toggle_pinned":
+      return "ピン留め状態を変更しました";
+    case "enable_share":
+      return "共有リンクを有効にしました";
+    case "disable_share":
+      return "共有リンクを無効にしました";
+    default:
+      return log.action;
+  }
+}
+
+export default async function Dashboard({ searchParams }: DashboardProps) {
+  const params = await searchParams;
+  const query = params?.q ?? "";
+  const category = params?.category ?? "";
+  const sort = params?.sort === "asc" ? "asc" : "desc";
+  const onlyFavorites = params?.onlyFavorites === "1";
+  const onlyPinned = params?.onlyPinned === "1";
+
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("dooai_user_id")?.value ?? null;
+
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .order("created_at", { ascending: sort === "asc" });
+
+  if (error) {
+    console.error(error);
+  }
+
+  const allDocuments = ((data as Document[]) ?? []).filter((doc) =>
+    userId ? doc.user_id === userId : true
+  );
+  const categories = Array.from(
+    new Set(
+      allDocuments
+        .map((doc) => doc.category)
+        .filter((c): c is string => !!c && c.length > 0)
+    )
+  ).sort((a, b) => a.localeCompare(b, "ja"));
+
+  const documents = filterDocuments(
+    allDocuments,
+    query,
+    category,
+    onlyFavorites,
+    onlyPinned
+  );
+
+  const sortedDocuments = [...documents].sort((a, b) => {
+    if (a.is_pinned !== b.is_pinned) {
+      return a.is_pinned ? -1 : 1;
+    }
+
+    const aTime = new Date(a.created_at).getTime();
+    const bTime = new Date(b.created_at).getTime();
+
+    return sort === "asc" ? aTime - bTime : bTime - aTime;
+  });
+
+  let recentActivities: ActivityLog[] = [];
+  if (userId) {
+    const { data: activityData, error: activityError } = await supabase
+      .from("activity_logs")
+      .select("id, action, document_id, document_title, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (activityError) {
+      console.error(activityError);
+    } else if (activityData) {
+      recentActivities = activityData as ActivityLog[];
+    }
+  }
+
+  const totalCount = allDocuments.length;
+  const pinnedCount = allDocuments.filter((d) => d.is_pinned).length;
+  const favoriteCount = allDocuments.filter((d) => d.is_favorite).length;
+  const lastActivityAt =
+    recentActivities.length > 0
+      ? new Date(recentActivities[0].created_at).toLocaleString("ja-JP")
+      : null;
+
+  const now = Date.now();
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const createdLast30Days = allDocuments.filter((d) => {
+    const t = new Date(d.created_at).getTime();
+    return !Number.isNaN(t) && now - t <= THIRTY_DAYS_MS;
+  }).length;
+  const categoryCount = Array.from(
+    new Set(
+      allDocuments
+        .map((d) => d.category)
+        .filter((c): c is string => !!c && c.length > 0)
+    )
+  ).length;
+
+  // document_id ごとの「作成日時」（create_document アクションの最初の時刻）をマップ化
+  const documentCreatedAtMap = new Map<string, string>();
+  for (const log of recentActivities) {
+    if (log.action !== "create_document" || !log.document_id) continue;
+    const prev = documentCreatedAtMap.get(log.document_id);
+    if (!prev || new Date(log.created_at) < new Date(prev)) {
+      documentCreatedAtMap.set(log.document_id, log.created_at);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex">
+      {/* サイドバー */}
+      <aside className="hidden border-r border-slate-200 bg-white md:flex md:w-60 md:flex-col">
+        <div className="px-4 py-4">
+          <Logo withTagline />
+        </div>
+        <nav className="mt-4 flex flex-1 flex-col gap-1 px-2 text-sm text-slate-700">
+          <Link
+            href="/app"
+            className="flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 font-medium text-white"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[13px]">
+              📄
+            </span>
+            <span>ドキュメント</span>
+          </Link>
+          <Link
+            href="/new"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[16px] text-white">
+              ＋
+            </span>
+            <span>新規作成</span>
+          </Link>
+          <Link
+            href="/settings"
+            className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-50"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[14px]">
+              ⚙
+            </span>
+            <span>設定</span>
+          </Link>
+        </nav>
+        <div className="border-t border-slate-200 px-3 py-3 text-[11px] text-slate-500">
+          <Link
+            href="/auth/logout"
+            className="flex w-full items-center justify-between rounded-lg px-2 py-1 hover:bg-slate-50"
+          >
+            <span>ログアウト</span>
+          </Link>
+        </div>
+      </aside>
+
+      {/* メインコンテンツ */}
+      <div className="flex min-h-screen flex-1 flex-col">
+        <header className="border-b border-slate-200 bg-white">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+            <h1 className="text-sm font-semibold text-slate-900">
+              ドキュメントワークスペース
+            </h1>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-slate-500">
+                合計 {totalCount} 件・ピン {pinnedCount} 件・お気に入り{" "}
+                {favoriteCount} 件
+              </span>
+              <UserMenu />
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto flex max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
+        {/* 概要カード */}
+        <section className="grid gap-3 md:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-emerald-50 to-sky-50 p-4 shadow-sm">
+            <p className="text-[11px] font-medium text-slate-500">ドキュメント総数</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900">
+              {totalCount}
+              <span className="ml-1 text-xs font-normal text-slate-500">件</span>
+            </p>
+            {lastActivityAt && (
+              <p className="mt-2 text-[11px] text-slate-500">
+                最近の操作: {lastActivityAt}
+              </p>
+            )}
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-[11px] font-medium text-slate-500">ピン留め</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900">
+              {pinnedCount}
+              <span className="ml-1 text-xs font-normal text-slate-500">件</span>
+            </p>
+            <p className="mt-2 text-[11px] text-slate-500">
+              一覧の先頭に表示されます
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-[11px] font-medium text-slate-500">お気に入り</p>
+            <p className="mt-1 text-2xl font-semibold text-slate-900">
+              {favoriteCount}
+              <span className="ml-1 text-xs font-normal text-slate-500">件</span>
+            </p>
+            <p className="mt-2 text-[11px] text-slate-500">
+              よく使うドキュメントを素早く見つけられます
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-[11px] font-medium text-slate-500">インサイト</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              直近30日 {createdLast30Days} 件
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              カテゴリ数: <span className="font-semibold">{categoryCount}</span> 種類
+            </p>
+          </div>
+        </section>
+
+        {/* 検索フォーム */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+          <form className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+            <div className="flex-1">
+              <label
+                htmlFor="q"
+                className="mb-1 block text-xs font-medium text-slate-700"
+              >
+                検索（タイトル・本文・タグ）
+              </label>
+              <input
+                id="q"
+                name="q"
+                defaultValue={query}
+                placeholder="例: プロジェクト計画, API 設計..."
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
+              />
+            </div>
+
+            <div className="min-w-[140px]">
+              <label
+                htmlFor="category"
+                className="mb-1 block text-xs font-medium text-slate-700"
+              >
+                カテゴリ
+              </label>
+              <select
+                id="category"
+                name="category"
+                defaultValue={category}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
+              >
+                <option value="">すべて</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="min-w-[120px]">
+              <label
+                htmlFor="sort"
+                className="mb-1 block text-xs font-medium text-slate-700"
+              >
+                並び順
+              </label>
+              <select
+                id="sort"
+                name="sort"
+                defaultValue={sort}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
+              >
+                <option value="desc">新しい順</option>
+                <option value="asc">古い順</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col items-start gap-2">
+              <div className="flex gap-3 text-[11px] text-slate-700">
+                <label className="inline-flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    name="onlyPinned"
+                    value="1"
+                    defaultChecked={onlyPinned}
+                    className="h-3 w-3 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span>ピンのみ</span>
+                </label>
+                <label className="inline-flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    name="onlyFavorites"
+                    value="1"
+                    defaultChecked={onlyFavorites}
+                    className="h-3 w-3 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span>お気に入りのみ</span>
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-400"
+                >
+                  検索
+                </button>
+                <Link
+                  href="/new"
+                  className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                >
+                  新規作成
+                </Link>
+              </div>
+            </div>
+          </form>
+
+          {/* クイックフィルタ */}
+          <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+            <span className="text-slate-500">クイックフィルタ:</span>
+            <Link
+              href="/app"
+              className={`inline-flex items-center rounded-full px-2 py-1 ${
+                !query && !category && !onlyFavorites && !onlyPinned
+                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                  : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
+              }`}
+            >
+              すべて
+            </Link>
+            <Link
+              href="/app?onlyPinned=1"
+              className={`inline-flex items-center rounded-full px-2 py-1 ${
+                onlyPinned
+                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                  : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
+              }`}
+            >
+              ピンだけ
+            </Link>
+            <Link
+              href="/app?onlyFavorites=1"
+              className={`inline-flex items-center rounded-full px-2 py-1 ${
+                onlyFavorites
+                  ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                  : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
+              }`}
+            >
+              お気に入りだけ
+            </Link>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-900">
+              あなたのドキュメント
+            </h2>
+            <div className="text-right text-xs text-slate-500">
+              <p>
+                {sortedDocuments.length} 件
+                {query ? `（検索ワード: "${query}"）` : ""}
+              </p>
+              {category && <p>カテゴリフィルタ: {category}</p>}
+              <p>並び順: {sort === "asc" ? "古い順" : "新しい順"}</p>
+            </div>
+          </div>
+
+          {sortedDocuments.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
+              ドキュメントがまだありません。
+              <Link
+                href="/new"
+                className="ml-1 font-medium text-emerald-600 underline-offset-2 hover:underline"
+              >
+                最初のドキュメントを作成しましょう。
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {sortedDocuments.map((doc) => (
+                <article
+                  key={doc.id}
+                  className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-500/60 hover:shadow-md"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <div className="space-y-1">
+                      <Link
+                        href={`/documents/${doc.id}`}
+                        className="line-clamp-2 text-sm font-semibold text-slate-900 hover:underline"
+                      >
+                        {doc.title}
+                      </Link>
+                      {doc.category && (
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                          {doc.category}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {(() => {
+                        const createdAt =
+                          documentCreatedAtMap.get(doc.id) ?? doc.created_at;
+                        return (
+                          <time
+                            dateTime={createdAt ?? undefined}
+                            className="shrink-0 text-[10px] text-slate-400"
+                          >
+                            {createdAt
+                              ? new Date(createdAt).toLocaleString("ja-JP", {
+                                  year: "numeric",
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "作成日時なし"}
+                          </time>
+                        );
+                      })()}
+                      <div className="flex gap-1">
+                        <form action={togglePinned}>
+                          <input type="hidden" name="id" value={doc.id} />
+                          <input
+                            type="hidden"
+                            name="next"
+                            value={doc.is_pinned ? "false" : "true"}
+                          />
+                          <button
+                            type="submit"
+                            className={`rounded-full border px-2 text-[10px] ${
+                              doc.is_pinned
+                                ? "border-amber-400 bg-amber-50 text-amber-700"
+                                : "border-slate-200 bg-white text-slate-400"
+                            }`}
+                            aria-label={
+                              doc.is_pinned
+                                ? "ピン留めを解除"
+                                : "ピン留めする"
+                            }
+                          >
+                            📌
+                          </button>
+                        </form>
+                        <form action={toggleFavorite}>
+                          <input type="hidden" name="id" value={doc.id} />
+                          <input
+                            type="hidden"
+                            name="next"
+                            value={doc.is_favorite ? "false" : "true"}
+                          />
+                          <button
+                            type="submit"
+                            className={`rounded-full border px-2 text-[10px] ${
+                              doc.is_favorite
+                                ? "border-rose-400 bg-rose-50 text-rose-700"
+                                : "border-slate-200 bg-white text-slate-400"
+                            }`}
+                            aria-label={
+                              doc.is_favorite
+                                ? "お気に入りを解除"
+                                : "お気に入りに追加"
+                            }
+                          >
+                            ★
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+
+                  {doc.summary && (
+                    <p className="mb-3 line-clamp-4 text-xs leading-relaxed text-slate-700">
+                      {doc.summary}
+                    </p>
+                  )}
+
+                  {Array.isArray(doc.tags) && doc.tags.length > 0 && (
+                  <div className="mt-auto flex flex-wrap gap-1">
+                    {doc.tags.map((tag) => {
+                      const isActive =
+                        query &&
+                        tag.toLowerCase() === query.toLowerCase().trim();
+                      return (
+                        <Link
+                          key={tag}
+                          href={`/app?q=${encodeURIComponent(tag)}`}
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ring-1 ${
+                            isActive
+                              ? "bg-emerald-50 text-emerald-700 ring-emerald-300"
+                              : "bg-slate-50 text-slate-600 ring-slate-200"
+                          }`}
+                        >
+                          {tag}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {userId && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-900">
+                最近のアクティビティ
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                直近 10 件の操作を表示します
+              </p>
+            </div>
+
+            {recentActivities.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-xs text-slate-500">
+                まだアクティビティがありません。ドキュメントの作成・編集・共有などを行うとここに履歴が表示されます。
+              </p>
+            ) : (
+              <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
+                {recentActivities.map((log) => (
+                  <li
+                    key={log.id}
+                    className="flex items-center justify-between px-4 py-3 text-xs"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="text-slate-800">
+                        {describeActivity(log)}
+                      </p>
+                      {log.document_title && (
+                        <p className="text-[11px] text-slate-500">
+                          {log.document_title}
+                        </p>
+                      )}
+                    </div>
+                    <time
+                      dateTime={log.created_at}
+                      className="shrink-0 text-[10px] text-slate-400"
+                    >
+                      {new Date(log.created_at).toLocaleString("ja-JP")}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
