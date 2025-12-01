@@ -198,7 +198,10 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
   const favoriteCount = allDocuments.filter((d) => d.is_favorite).length;
   const lastActivityAt =
     recentActivities.length > 0
-      ? new Date(recentActivities[0].created_at).toLocaleString("ja-JP")
+      ? new Date(recentActivities[0].created_at as string).toLocaleString(
+          "ja-JP",
+          { timeZone: "Asia/Tokyo" }
+        )
       : null;
 
   // テスト環境やビルド時にも安定するよう、現在時刻はモジュール外で一度だけ評価して渡す
@@ -544,6 +547,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                                   day: "2-digit",
                                   hour: "2-digit",
                                   minute: "2-digit",
+                                  timeZone: "Asia/Tokyo",
                                 })
                               : "作成日時なし"}
                           </time>
