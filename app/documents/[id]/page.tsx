@@ -8,6 +8,24 @@ import { logActivity } from "@/lib/activityLog";
 import { generateSummaryAndTags } from "@/lib/ai";
 import { Logo } from "@/components/Logo";
 
+// UTC の ISO 文字列を、日本時間 (UTC+9) の "YYYY/MM/DD HH:MM" に変換するヘルパー
+function formatJstDateTime(value: string | null): string | null {
+  if (!value) return null;
+  const utc = new Date(value);
+  if (Number.isNaN(utc.getTime())) return null;
+
+  const jstMs = utc.getTime() + 9 * 60 * 60 * 1000;
+  const jst = new Date(jstMs);
+
+  const year = jst.getUTCFullYear();
+  const month = String(jst.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(jst.getUTCDate()).padStart(2, "0");
+  const hour = String(jst.getUTCHours()).padStart(2, "0");
+  const minute = String(jst.getUTCMinutes()).padStart(2, "0");
+
+  return `${year}/${month}/${day} ${hour}:${minute}`;
+}
+
 type PageProps = {
   params: Promise<{
     id: string;
@@ -212,15 +230,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
 
   const createdAtSource =
     createdLog?.created_at ?? (doc.created_at as string | null) ?? null;
-  if (createdAtSource) {
-    createdAtDisplay = new Date(createdAtSource).toLocaleString("ja-JP", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
+  createdAtDisplay = formatJstDateTime(createdAtSource);
 
   const rawContent = doc.raw_content ?? "";
   const charCount = rawContent.length;

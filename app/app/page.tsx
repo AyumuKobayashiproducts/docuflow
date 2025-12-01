@@ -7,6 +7,24 @@ import { Logo } from "@/components/Logo";
 import { UserMenu } from "./UserMenu";
 import { filterDocuments } from "@/lib/filterDocuments";
 
+// UTC の ISO 文字列を、日本時間 (UTC+9) の "YYYY/MM/DD HH:MM" に変換するヘルパー
+function formatJstDateTime(value: string | null): string | null {
+  if (!value) return null;
+  const utc = new Date(value);
+  if (Number.isNaN(utc.getTime())) return null;
+
+  const jstMs = utc.getTime() + 9 * 60 * 60 * 1000;
+  const jst = new Date(jstMs);
+
+  const year = jst.getUTCFullYear();
+  const month = String(jst.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(jst.getUTCDate()).padStart(2, "0");
+  const hour = String(jst.getUTCHours()).padStart(2, "0");
+  const minute = String(jst.getUTCMinutes()).padStart(2, "0");
+
+  return `${year}/${month}/${day} ${hour}:${minute}`;
+}
+
 // 「直近30日で作成されたドキュメント数」を数えるためのヘルパー
 // Date.now() の呼び出しはここ（コンポーネント外）に閉じ込めて React の純粋性ルールを守る
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -198,10 +216,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
   const favoriteCount = allDocuments.filter((d) => d.is_favorite).length;
   const lastActivityAt =
     recentActivities.length > 0
-      ? new Date(recentActivities[0].created_at as string).toLocaleString(
-          "ja-JP",
-          { timeZone: "Asia/Tokyo" }
-        )
+      ? formatJstDateTime(recentActivities[0].created_at as string)
       : null;
 
   // テスト環境やビルド時にも安定するよう、現在時刻はモジュール外で一度だけ評価して渡す
@@ -541,14 +556,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                             className="shrink-0 text-[10px] text-slate-400"
                           >
                             {createdAt
-                              ? new Date(createdAt as string).toLocaleString("ja-JP", {
-                                  year: "numeric",
-                                  month: "2-digit",
-                                  day: "2-digit",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  timeZone: "Asia/Tokyo",
-                                })
+                              ? formatJstDateTime(createdAt as string)
                               : "作成日時なし"}
                           </time>
                         );
