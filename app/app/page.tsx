@@ -47,6 +47,7 @@ type Document = {
   user_id: string | null;
   is_favorite: boolean;
   is_pinned: boolean;
+  share_token?: string | null;
 };
 
 type ActivityLog = {
@@ -214,6 +215,16 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
   const totalCount = allDocuments.length;
   const pinnedCount = allDocuments.filter((d) => d.is_pinned).length;
   const favoriteCount = allDocuments.filter((d) => d.is_favorite).length;
+  const sharedCount = allDocuments.filter((d) => !!d.share_token).length;
+  const avgContentLength =
+    allDocuments.length > 0
+      ? Math.round(
+          allDocuments.reduce(
+            (sum, d) => sum + (d.raw_content?.length ?? 0),
+            0
+          ) / allDocuments.length
+        )
+      : 0;
   const lastActivityAt =
     recentActivities.length > 0
       ? formatJstDateTime(recentActivities[0].created_at as string)
@@ -228,6 +239,18 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
         .filter((c): c is string => !!c && c.length > 0)
     )
   ).length;
+
+  // カテゴリ別件数のトップ3を集計（ミニグラフ風カード用）
+  const categoryStats: [string, number][] = (() => {
+    const counter = new Map<string, number>();
+    for (const doc of allDocuments) {
+      const cat = (doc.category ?? "").trim();
+      if (!cat) continue;
+      counter.set(cat, (counter.get(cat) ?? 0) + 1);
+    }
+    return Array.from(counter.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  })();
+  const maxCategoryCount = categoryStats.length > 0 ? categoryStats[0][1] : 0;
 
   // document_id ごとの「作成日時」（create_document アクションの最初の時刻）をマップ化
   const documentCreatedAtMap = new Map<string, string>();
@@ -359,10 +382,62 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             <p className="mt-1 text-lg font-semibold text-slate-900">
               直近30日 {createdLast30Days} 件
             </p>
-            <p className="mt-1 text-[11px] text-slate-500">
-              カテゴリ数: <span className="font-semibold">{categoryCount}</span> 種類
+            <dl className="mt-2 space-y-1 text-[11px] text-slate-500">
+              <div className="flex items-center justify-between">
+                <dt>アクティブカテゴリ</dt>
+                <dd className="font-semibold">{categoryCount} 種類</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt>共有リンク発行中</dt>
+                <dd className="font-semibold">{sharedCount} 件</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt>平均本文ボリューム</dt>
+                <dd className="font-semibold">
+                  {avgContentLength.toLocaleString("ja-JP")} 文字
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        {/* カテゴリ別トップ3（ミニグラフ風） */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-slate-900">
+              カテゴリ別ドキュメント数（トップ3）
+            </h2>
+            <p className="text-[11px] text-slate-500">
+              カテゴリの偏りや使われ方の傾向をざっくり確認できます
             </p>
           </div>
+          {categoryStats.length === 0 ? (
+            <p className="text-[11px] text-slate-500">
+              まだカテゴリが付いたドキュメントがありません。
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {categoryStats.map(([cat, count]) => {
+                const ratio =
+                  maxCategoryCount > 0 ? Math.max(0, (count / maxCategoryCount) * 100) : 0;
+                return (
+                  <li key={cat} className="flex items-center gap-2">
+                    <span className="w-20 truncate text-[11px] font-medium text-slate-700">
+                      {cat}
+                    </span>
+                    <div className="relative h-2 flex-1 rounded-full bg-slate-100">
+                      <div
+                        className="h-2 rounded-full bg-emerald-500"
+                        style={{ width: `${ratio}%` }}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <span className="w-6 text-right text-[11px] text-slate-600">{count}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
 
         {/* 検索フォーム */}
