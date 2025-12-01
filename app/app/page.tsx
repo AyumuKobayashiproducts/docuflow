@@ -802,24 +802,36 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="text-slate-400">✍️</span>
-                        <span>
-                          {doc.raw_content
-                            ? `${doc.raw_content.length.toLocaleString("ja-JP")} 文字`
-                            : "0 文字"}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-slate-400">✍️</span>
+                          <span>
+                            {doc.raw_content
+                              ? `${doc.raw_content.length.toLocaleString("ja-JP")} 文字`
+                              : "0 文字"}
+                          </span>
                         </span>
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <span className="text-slate-400">💬</span>
-                        <span>
-                          {(commentCountMap.get(doc.id) ?? 0).toLocaleString(
-                            "ja-JP"
-                          )}{" "}
-                          件
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-slate-400">💬</span>
+                          <span>
+                            {(commentCountMap.get(doc.id) ?? 0).toLocaleString(
+                              "ja-JP"
+                            )}{" "}
+                            件
+                          </span>
                         </span>
-                      </span>
+                      </div>
+                      <form action={deleteDocumentFromList}>
+                        <input type="hidden" name="id" value={doc.id} />
+                        <input type="hidden" name="title" value={doc.title} />
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2 py-0.5 text-[10px] font-medium text-red-500 hover:bg-red-50"
+                        >
+                          🗑 <span>削除</span>
+                        </button>
+                      </form>
                     </div>
                   </div>
                 </article>
