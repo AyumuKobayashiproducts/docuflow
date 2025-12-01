@@ -9,7 +9,10 @@ import {
 
 // OpenAI クライアントをモックする
 vi.mock("openai", () => {
-  const queue: any[] = [];
+  type Choice = { message?: { content?: string | null } | null };
+  type MockResponse = { choices?: Choice[] };
+
+  const queue: MockResponse[] = [];
 
   const create = vi.fn(() => {
     const next = queue.shift();
@@ -29,7 +32,7 @@ vi.mock("openai", () => {
     chat,
   }));
 
-  function enqueueResponse(response: any) {
+  function enqueueResponse(response: MockResponse) {
     queue.push(response);
   }
 
@@ -37,8 +40,10 @@ vi.mock("openai", () => {
 });
 
 // モックにレスポンスを積むヘルパー
-function enqueueResponse(response: any) {
-  (OpenAIModule as any).enqueueResponse(response);
+function enqueueResponse(response: { choices?: { message?: { content?: string | null } | null }[] }) {
+  (OpenAIModule as unknown as { enqueueResponse: (r: typeof response) => void }).enqueueResponse(
+    response
+  );
 }
 
 describe("lib/ai", () => {

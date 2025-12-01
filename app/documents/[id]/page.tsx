@@ -162,7 +162,7 @@ async function regenerateSummary(formData: FormData) {
 
   await logActivity("update_document", {
     documentId: id,
-    documentTitle: (data as any).title ?? null,
+    documentTitle: (data as { title?: string } | null)?.title ?? null,
     details: "regenerate_summary",
   });
 

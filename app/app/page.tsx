@@ -7,6 +7,17 @@ import { Logo } from "@/components/Logo";
 import { UserMenu } from "./UserMenu";
 import { filterDocuments } from "@/lib/filterDocuments";
 
+// 「直近30日で作成されたドキュメント数」を数えるためのヘルパー
+// Date.now() の呼び出しはここ（コンポーネント外）に閉じ込めて React の純粋性ルールを守る
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+function countDocumentsCreatedLast30Days(documents: Document[]): number {
+  const now = Date.now();
+  return documents.filter((d) => {
+    const t = new Date(d.created_at as string).getTime();
+    return !Number.isNaN(t) && now - t <= THIRTY_DAYS_MS;
+  }).length;
+}
+
 type Document = {
   id: string;
   title: string;
@@ -190,12 +201,8 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
       ? new Date(recentActivities[0].created_at).toLocaleString("ja-JP")
       : null;
 
-  const now = Date.now();
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-  const createdLast30Days = allDocuments.filter((d) => {
-    const t = new Date(d.created_at).getTime();
-    return !Number.isNaN(t) && now - t <= THIRTY_DAYS_MS;
-  }).length;
+  // テスト環境やビルド時にも安定するよう、現在時刻はモジュール外で一度だけ評価して渡す
+  const createdLast30Days = countDocumentsCreatedLast30Days(allDocuments);
   const categoryCount = Array.from(
     new Set(
       allDocuments
