@@ -6,9 +6,9 @@ import { useEffect } from "react";
  * ダッシュボードのカードに対してキーボードショートカットを付与するレイヤー。
  *
  * - カード上にマウスカーソルを置いた状態で以下のショートカットで削除:
- *   - Shift + D
- *   - Cmd + D / Cmd + Delete（Mac 想定）
- *   - Ctrl + D / Ctrl + Delete（Windows 想定）
+ *   - Shift + D（アプリ独自・ブラウザショートカットと被りにくい）
+ *   - Cmd + Delete / Cmd + Backspace（Mac 想定）
+ *   - Ctrl + Delete / Ctrl + Backspace（Windows 想定）
  */
 export function DocumentCardShortcuts() {
   useEffect(() => {
@@ -29,23 +29,23 @@ export function DocumentCardShortcuts() {
 
       const key = event.key;
 
-      // 共通: Shift + D
+      // 共通: Shift + D （ブラウザ標準の Cmd+D / Ctrl+D とは敢えて別にする）
       const isShiftD =
         (key === "d" || key === "D") && event.shiftKey && !event.metaKey && !event.ctrlKey;
 
-      // Mac 想定: Cmd + D / Cmd + Delete
+      // Mac 想定: Cmd + Delete / Cmd + Backspace
       const isMacStyle =
         event.metaKey &&
-        ((key === "d" || key === "D" || key === "Backspace" || key === "Delete") &&
-          !event.ctrlKey &&
-          !event.shiftKey);
+        (key === "Backspace" || key === "Delete") &&
+        !event.ctrlKey &&
+        !event.shiftKey;
 
-      // Windows 想定: Ctrl + D / Ctrl + Delete
+      // Windows 想定: Ctrl + Delete / Ctrl + Backspace
       const isWindowsStyle =
         event.ctrlKey &&
-        ((key === "d" || key === "D" || key === "Backspace" || key === "Delete") &&
-          !event.metaKey &&
-          !event.shiftKey);
+        (key === "Backspace" || key === "Delete") &&
+        !event.metaKey &&
+        !event.shiftKey;
 
       if (isShiftD || isMacStyle || isWindowsStyle) {
         const deleteButton = currentCard.querySelector<
