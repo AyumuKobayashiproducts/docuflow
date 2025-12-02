@@ -11,7 +11,8 @@ type ActivityAction =
   | "disable_share"
   | "add_comment"
   | "archive_document"
-  | "restore_document";
+  | "restore_document"
+  | "view_share";
 
 type ActivityPayload = {
   documentId?: string;

@@ -573,6 +573,10 @@ function describeActivity(log: ActivityLog): string {
       return "共有リンクを有効にしました";
     case "disable_share":
       return "共有リンクを無効にしました";
+    case "add_comment":
+      return "コメントを追加しました";
+    case "view_share":
+      return "共有リンクを閲覧しました";
     case "archive_document":
       return "ドキュメントをアーカイブしました";
     case "restore_document":
