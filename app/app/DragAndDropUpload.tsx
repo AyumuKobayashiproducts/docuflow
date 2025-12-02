@@ -34,23 +34,36 @@ export function DragAndDropUpload({ uploadAction }: Props) {
     event.stopPropagation();
     setIsDragging(false);
 
-    const file = event.dataTransfer.files?.[0];
-    if (!file) return;
+    const droppedFiles = Array.from(event.dataTransfer.files ?? []);
+    const validFiles = droppedFiles.filter(
+      (file) =>
+        ALLOWED_TYPES.includes(file.type) || file.name.match(/\.(pdf|doc|docx)$/i)
+    );
 
-    if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(pdf|doc|docx)$/i)) {
+    if (validFiles.length === 0) {
       setMessage("PDF / Word（.pdf / .doc / .docx）のみアップロードできます。");
       return;
     }
 
     const formData = new FormData();
-    formData.append("file", file);
+    for (const file of validFiles) {
+      formData.append("files", file);
+    }
 
     try {
       setIsUploading(true);
-      setMessage("AI がドキュメントを読み込み中です…");
+      setMessage(
+        validFiles.length === 1
+          ? "AI がドキュメントを読み込み中です…"
+          : `AI が ${validFiles.length} 件のドキュメントを読み込み中です…`
+      );
       await uploadAction(formData);
       // 成功するとサーバーアクション側で /app が再検証され、新しいカードが一覧に表示される
-      setMessage("カードを作成しました。数秒後に一覧へ反映されます。");
+      setMessage(
+        validFiles.length === 1
+          ? "カードを作成しました。数秒後に一覧へ反映されます。"
+          : `${validFiles.length} 枚のカードを作成しました。数秒後に一覧へ反映されます。`
+      );
     } catch (e) {
       console.error(e);
       setMessage("アップロードに失敗しました。時間をおいて再度お試しください。");

@@ -92,6 +92,7 @@ type Document = {
   user_id: string | null;
   is_favorite: boolean;
   is_pinned: boolean;
+   is_archived?: boolean | null;
   share_token?: string | null;
 };
 
@@ -175,6 +176,32 @@ async function deleteDocumentFromList(formData: FormData) {
   revalidatePath("/app");
 }
 
+async function toggleArchivedFromList(formData: FormData) {
+  "use server";
+
+  const id = String(formData.get("id") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim() || null;
+  const next = String(formData.get("next") ?? "") === "true";
+  if (!id) return;
+
+  const { error } = await supabase
+    .from("documents")
+    .update({ is_archived: next })
+    .eq("id", id);
+
+  if (error) {
+    console.error("toggleArchivedFromList error:", error);
+    throw new Error("Failed to toggle archived.");
+  }
+
+  await logActivity(next ? "archive_document" : "restore_document", {
+    documentId: id,
+    documentTitle: title,
+  });
+
+  revalidatePath("/app");
+}
+
 async function deleteDocumentsBulk(formData: FormData) {
   "use server";
 
@@ -232,77 +259,88 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
 
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
+  // 複数ファイル対応: "files" に複数入っていればそれを優先し、なければ従来の "file" 1件のみ扱う
+  const filesFromForm = formData.getAll("files").filter(
+    (f): f is File => f instanceof File && f.size > 0
+  );
+
+  const fallbackFile = formData.get("file");
+  if (filesFromForm.length === 0 && fallbackFile instanceof File && fallbackFile.size > 0) {
+    filesFromForm.push(fallbackFile);
+  }
+
+  if (filesFromForm.length === 0) {
     return;
   }
 
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    console.error("アップロードされたファイルが大きすぎます（最大 10MB まで）。");
-    return;
-  }
+  for (const file of filesFromForm) {
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      console.error("アップロードされたファイルが大きすぎます（最大 10MB まで）。");
+      continue;
+    }
 
-  let content: string;
-  try {
-    content = await extractTextFromFile(file);
-  } catch (e) {
-    console.error("ファイルからテキストを抽出できませんでした:", e);
-    return;
-  }
+    let content: string;
+    try {
+      content = await extractTextFromFile(file);
+    } catch (e) {
+      console.error("ファイルからテキストを抽出できませんでした:", e);
+      continue;
+    }
 
-  if (!content) {
-    return;
-  }
+    if (!content) {
+      continue;
+    }
 
-  let title = "";
-  let category = "";
-  let summary = "";
-  let tags: string[] = [];
+    let title = "";
+    let category = "";
+    let summary = "";
+    let tags: string[] = [];
 
-  try {
-    const [generatedTitle, generatedCategory, generated] = await Promise.all([
-      generateTitleFromContent(content),
-      generateCategoryFromContent(content),
-      generateSummaryAndTags(content),
-    ]);
+    try {
+      const [generatedTitle, generatedCategory, generated] = await Promise.all([
+        generateTitleFromContent(content),
+        generateCategoryFromContent(content),
+        generateSummaryAndTags(content),
+      ]);
 
-    title = (generatedTitle || content.slice(0, 30)) || "無題ドキュメント";
-    category = (generatedCategory || "未分類") || "未分類";
-    summary = generated.summary;
-    tags = generated.tags;
-  } catch (e) {
-    console.error("AI generate error in createDocumentFromFileOnDashboard:", e);
-    title = content.slice(0, 30) || "無題ドキュメント";
-    category = "未分類";
-    summary = "";
-    tags = [];
-  }
+      title = (generatedTitle || content.slice(0, 30)) || "無題ドキュメント";
+      category = (generatedCategory || "未分類") || "未分類";
+      summary = generated.summary;
+      tags = generated.tags;
+    } catch (e) {
+      console.error("AI generate error in createDocumentFromFileOnDashboard:", e);
+      title = content.slice(0, 30) || "無題ドキュメント";
+      category = "未分類";
+      summary = "";
+      tags = [];
+    }
 
-  const { data, error } = await supabase
-    .from("documents")
-    .insert({
-      user_id: userId,
-      title,
-      category,
-      raw_content: content,
-      summary,
-      tags,
-      is_favorite: false,
-      is_pinned: false,
-    })
-    .select("id");
+    const { data, error } = await supabase
+      .from("documents")
+      .insert({
+        user_id: userId,
+        title,
+        category,
+        raw_content: content,
+        summary,
+        tags,
+        is_favorite: false,
+        is_pinned: false,
+      })
+      .select("id");
 
-  if (error) {
-    console.error("Supabase insert error (createDocumentFromFileOnDashboard):", error);
-    throw new Error(`Failed to insert document: ${error.message}`);
-  }
+    if (error) {
+      console.error("Supabase insert error (createDocumentFromFileOnDashboard):", error);
+      continue;
+    }
 
-  const created = Array.isArray(data) && data.length > 0 ? data[0] : null;
-  if (created?.id) {
-    await logActivity("create_document", {
-      documentId: String(created.id),
-      documentTitle: title,
-    });
+    const created = Array.isArray(data) && data.length > 0 ? data[0] : null;
+    if (created?.id) {
+      await logActivity("create_document", {
+        documentId: String(created.id),
+        documentTitle: title,
+      });
+    }
   }
 
   revalidatePath("/app");
@@ -322,6 +360,7 @@ type DashboardProps = {
     sort?: string;
     onlyFavorites?: string;
     onlyPinned?: string;
+    archived?: string;
   }>;
 };
 
@@ -341,6 +380,10 @@ function describeActivity(log: ActivityLog): string {
       return "共有リンクを有効にしました";
     case "disable_share":
       return "共有リンクを無効にしました";
+    case "archive_document":
+      return "ドキュメントをアーカイブしました";
+    case "restore_document":
+      return "ドキュメントをアーカイブから復元しました";
     default:
       return log.action;
   }
@@ -353,6 +396,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
   const sort = params?.sort === "asc" ? "asc" : "desc";
   const onlyFavorites = params?.onlyFavorites === "1";
   const onlyPinned = params?.onlyPinned === "1";
+  const showArchived = params?.archived === "1";
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
@@ -365,6 +409,8 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
   if (userId) {
     documentsQuery = documentsQuery.eq("user_id", userId);
   }
+
+  documentsQuery = documentsQuery.eq("is_archived", showArchived);
 
   const { data, error } = await documentsQuery;
 
@@ -421,6 +467,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
   const totalCount = allDocuments.length;
   const pinnedCount = allDocuments.filter((d) => d.is_pinned).length;
   const favoriteCount = allDocuments.filter((d) => d.is_favorite).length;
+  const archivedCount = allDocuments.filter((d) => (d as Document).is_archived).length;
   const sharedCount = allDocuments.filter((d) => !!d.share_token).length;
   const avgContentLength =
     allDocuments.length > 0
@@ -627,6 +674,10 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                   {avgContentLength.toLocaleString("ja-JP")} 文字
                 </dd>
               </div>
+              <div className="flex items-center justify-between">
+                <dt>アーカイブ済み</dt>
+                <dd className="font-semibold">{archivedCount} 件</dd>
+              </div>
             </dl>
           </div>
         </section>
@@ -780,7 +831,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             <Link
               href="/app"
               className={`inline-flex items-center rounded-full px-2 py-1 ${
-                !query && !category && !onlyFavorites && !onlyPinned
+                !query && !category && !onlyFavorites && !onlyPinned && !showArchived
                   ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                   : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
               }`}
@@ -807,13 +858,23 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             >
               お気に入りだけ
             </Link>
+            <Link
+              href="/app?archived=1"
+              className={`inline-flex items-center rounded-full px-2 py-1 ${
+                showArchived
+                  ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+                  : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
+              }`}
+            >
+              アーカイブ
+            </Link>
           </div>
         </section>
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">
-              あなたのドキュメント
+              {showArchived ? "アーカイブされたドキュメント" : "あなたのドキュメント"}
             </h2>
             <div className="text-right text-xs text-slate-500">
               <p>
@@ -853,7 +914,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                 <article
                   key={doc.id}
                   data-doc-card
-                  className="flex flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-500/60 hover:shadow-md"
+                  className={`flex flex-col rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                    (doc as Document).is_archived
+                      ? "border-slate-200 bg-slate-50"
+                      : "border-slate-200 bg-white hover:border-emerald-500/60"
+                  }`}
                 >
                   {/* すべて削除用に、表示中ドキュメントの ID を hidden で送る */}
                   <input
@@ -905,6 +970,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                           </time>
                         );
                       })()}
+                      {(doc as Document).is_archived && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-700">
+                          📦 アーカイブ
+                        </span>
+                      )}
                       {doc.share_token ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
                           🔗 共有中
@@ -1031,17 +1101,41 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                           </span>
                         </span>
                       </div>
-                      <form action={deleteDocumentFromList}>
-                        <input type="hidden" name="id" value={doc.id} />
-                        <input type="hidden" name="title" value={doc.title} />
-                        <button
-                          type="submit"
-                          className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2 py-0.5 text-[10px] font-medium text-red-500 hover:bg-red-50"
-                          data-doc-delete-button
-                        >
-                          🗑 <span>削除</span>
-                        </button>
-                      </form>
+                      <div className="flex items-center gap-1">
+                        <form action={toggleArchivedFromList}>
+                          <input type="hidden" name="id" value={doc.id} />
+                          <input type="hidden" name="title" value={doc.title} />
+                          <input
+                            type="hidden"
+                            name="next"
+                            value={(doc as Document).is_archived ? "false" : "true"}
+                          />
+                          <button
+                            type="submit"
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                              (doc as Document).is_archived
+                                ? "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                                : "border-slate-300 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                            }`}
+                          >
+                            📦{" "}
+                            <span>
+                              {(doc as Document).is_archived ? "復元" : "アーカイブ"}
+                            </span>
+                          </button>
+                        </form>
+                        <form action={deleteDocumentFromList}>
+                          <input type="hidden" name="id" value={doc.id} />
+                          <input type="hidden" name="title" value={doc.title} />
+                          <button
+                            type="submit"
+                            className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2 py-0.5 text-[10px] font-medium text-red-500 hover:bg-red-50"
+                            data-doc-delete-button
+                          >
+                            🗑 <span>削除</span>
+                          </button>
+                        </form>
+                      </div>
                     </div>
                   </div>
                 </article>
