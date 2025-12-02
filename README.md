@@ -318,6 +318,27 @@ npm run test:coverage
 # 本番ビルド & 起動
 npm run build
 npm start
+
+# スクリーンショット自動生成（本番環境から）
+BASE_URL=https://docuflow-azure.vercel.app npm run screenshots
+```
+
+```bash
+# 開発サーバー起動
+npm run dev
+
+# 型チェック & Lint
+npm run lint
+
+# テスト（Vitest）
+npm test
+
+# カバレッジ付きテスト
+npm run test:coverage
+
+# 本番ビルド & 起動
+npm run build
+npm start
 ```
 
 ブラウザで `http://localhost:3000` を開くと、ログインページ（`/auth/login`）にリダイレクトされます。  
@@ -335,6 +356,14 @@ GitHub 上で見たときに UI の雰囲気が一目で伝わるよう、`docs/
 ![ダッシュボード画面](docs/screenshots/dashboard.png)
 
 > メインワークスペース画面。左サイドバー、概要カード（ドキュメント総数・ピン留め・お気に入り・インサイト）、カテゴリ別トップ3ミニグラフ、ドラッグ＆ドロップアップロード、詳細検索フォーム（日付範囲・共有中フィルタ含む）、ドキュメントカード一覧、最近のアクティビティを表示。
+
+![ログインページ](docs/screenshots/login.png)
+
+> メールアドレスとパスワードでログインする認証画面。
+
+![サインアップページ](docs/screenshots/signup.png)
+
+> 新規アカウント作成画面。
 
 ![新規ドキュメント作成画面](docs/screenshots/new-document.png)
 
