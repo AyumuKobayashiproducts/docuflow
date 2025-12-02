@@ -135,11 +135,11 @@ async function generateScreenshots() {
                 await page.waitForTimeout(500);
               }
               
-              // フォームを送信（form要素を直接submit）
-              const shareForm = page.locator('form:has(button:has-text("共有リンクを発行"))').first();
-              if (await shareForm.count() > 0) {
+              // フォームを送信（送信ボタンをクリック）
+              const submitButton = page.locator('form:has(button:has-text("共有リンクを発行")) button[type="submit"]').first();
+              if (await submitButton.count() > 0) {
                 console.log('📤 共有リンクフォームを送信中...');
-                await shareForm.submit();
+                await submitButton.click();
                 await page.waitForTimeout(3000);
                 await page.waitForLoadState('networkidle');
                 
