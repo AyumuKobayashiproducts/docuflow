@@ -1,14 +1,13 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { getSupabasePublicEnv, getServiceRoleKey } from "./config";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 let client: SupabaseClient | null = null;
 
-const { url } = getSupabasePublicEnv();
-const serviceRoleKey = getServiceRoleKey();
-
-if (url && serviceRoleKey) {
+if (supabaseUrl && serviceRoleKey) {
   // 管理用クライアント（サーバーサイド専用）。auth.admin を使うために service_role キーを利用する。
-  client = createClient(url, serviceRoleKey, {
+  client = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

@@ -7,9 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "type-check": "tsc --noEmit",
     "test": "vitest",
+    "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage",
-    "screenshots": "tsx scripts/generate-screenshots.ts"
+    "validate": "npm run lint && npm run type-check && npm run test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",
@@ -21,7 +26,6 @@
     "react-dom": "19.2.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.48.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -29,9 +33,9 @@
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
-    "playwright": "^1.48.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.9",
     "tailwindcss": "^4",
-    "tsx": "^4.19.2",
     "typescript": "^5",
     "vitest": "^2.1.4"
   }

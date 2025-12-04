@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PROTECTED_PATHS = ["/app", "/new", "/documents", "/settings"];
-const AUTH_COOKIE = "docuhub_ai_auth";
+export const PROTECTED_PATHS = ["/app", "/new", "/documents", "/settings"];
+export const AUTH_COOKIE = "docuhub_ai_auth";
 
-function isProtectedPath(pathname: string) {
+export function isProtectedPath(pathname: string): boolean {
   return (
     pathname.startsWith("/app") ||
     pathname.startsWith("/new") ||

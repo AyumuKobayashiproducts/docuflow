@@ -11,10 +11,30 @@ import { logActivity } from "@/lib/activityLog";
 import { Logo } from "@/components/Logo";
 import { NewSubmitButtons } from "@/components/NewSubmitButtons";
 import { NewFileDropZone } from "@/components/NewFileDropZone";
-import { extractTextFromFile } from "@/lib/fileTextExtractor";
-import { getAISettingsForUser } from "@/lib/userSettings";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
+async function extractTextFromFile(file: File): Promise<string> {
+  const filename = file.name.toLowerCase();
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  if (filename.endsWith(".pdf")) {
+    const pdfParse = (await import("pdf-parse")).default;
+    const data = await pdfParse(buffer);
+    return (data.text ?? "").trim();
+  }
+
+  if (filename.endsWith(".doc") || filename.endsWith(".docx")) {
+    const mammoth = await import("mammoth");
+    const result = await mammoth.extractRawText({ buffer });
+    return (result.value ?? "").trim();
+  }
+
+  throw new Error(
+    "サポートされていないファイル形式です。PDF / DOC / DOCX のみ対応しています。"
+  );
+}
 
 // AI を使わず「とりあえず保存」する高速パス
 async function fastCreateDocument(formData: FormData) {
@@ -32,9 +52,7 @@ async function fastCreateDocument(formData: FormData) {
 
   if (file instanceof File && file.size > 0) {
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      console.error(
-        "アップロードされたファイルが大きすぎます（最大 10MB まで）。",
-      );
+      console.error("アップロードされたファイルが大きすぎます（最大 10MB まで）。");
       return;
     }
 
@@ -68,8 +86,6 @@ async function fastCreateDocument(formData: FormData) {
       tags: [],
       is_favorite: false,
       is_pinned: false,
-      // 新規作成時は必ず「未アーカイブ」として扱う
-      is_archived: false,
     })
     .select("id");
 
@@ -104,9 +120,7 @@ async function createDocument(formData: FormData) {
 
   if (file instanceof File && file.size > 0) {
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      console.error(
-        "アップロードされたファイルが大きすぎます（最大 10MB まで）。",
-      );
+      console.error("アップロードされたファイルが大きすぎます（最大 10MB まで）。");
       return;
     }
 
@@ -119,14 +133,9 @@ async function createDocument(formData: FormData) {
   }
 
   if (!content) {
-    // TODO: バリデーションメッセージを UI に返したい場合は、
-    // useFormState などを使う実装に変更できます（MVP では単純に戻す）。
     return;
   }
 
-  // AI によるタイトル / カテゴリ / 要約・タグ生成
-  // 本番環境で OpenAI のキーが未設定でも「ボタンが無反応」に見えないよう、
-  // すべて try/catch で囲んでフォールバックする
   let summary = "";
   let tags: string[] = [];
 
@@ -146,20 +155,18 @@ async function createDocument(formData: FormData) {
     ]);
 
     title =
-      generatedTitle || title || content.slice(0, 30) || "無題ドキュメント";
-    category = generatedCategory || category || "未分類" || "未分類";
+      (generatedTitle || title || content.slice(0, 30)) || "無題ドキュメント";
+    category = (generatedCategory || category || "未分類") || "未分類";
     summary = generated.summary;
     tags = generated.tags;
   } catch (e) {
     console.error("AI generate error in createDocument:", e);
-    // フォールバック: タイトル / カテゴリが空なら素朴な値を入れておく
     if (!title) {
       title = content.slice(0, 30) || "無題ドキュメント";
     }
     if (!category) {
       category = "未分類";
     }
-    // summary / tags は空のままでも保存は続行する
   }
 
   const { data, error } = await supabase
@@ -167,17 +174,12 @@ async function createDocument(formData: FormData) {
     .insert({
       user_id: userId,
       title,
-      // DB 側で category が NOT NULL 制約になっているため、
-      // 未入力の場合は「未分類」という文字列で保存する
       category: category || "未分類",
       raw_content: content,
       summary,
       tags,
-      // お気に入り / ピン留めは新規作成時は false で初期化
       is_favorite: false,
       is_pinned: false,
-      // 新規作成時は必ず「未アーカイブ」として扱う
-      is_archived: false,
     })
     .select("id");
 
@@ -197,179 +199,250 @@ async function createDocument(formData: FormData) {
   redirect("/");
 }
 
-export default async function NewDocumentPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
-  const aiSettings = await getAISettingsForUser(userId);
-
+export default function NewDocumentPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <Logo withTagline />
-          <nav className="flex items-center gap-2 text-[11px] text-slate-600">
-            <Link
-              href="/app"
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 font-medium hover:bg-slate-50"
-            >
-              一覧に戻る
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-pattern opacity-30 pointer-events-none" />
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-emerald-100/40 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-sky-100/40 to-transparent rounded-full blur-3xl" />
+      </div>
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
-        <section className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1.3fr)]">
-          {/* 左カラム：入力フォーム */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-2 text-base font-semibold text-slate-900">
-              ドキュメント情報
-            </h2>
-            <p className="mb-6 text-xs text-slate-500">
-              テキストを直接入力するか、PDF / Word
-              ファイルをアップロードすると、AI が要約とタグ （最大 3
-              つ）を自動生成します。
-            </p>
-            <form className="space-y-4" action={createDocument}>
-              <div>
-                <label
-                  htmlFor="title"
-                  className="mb-1 block text-sm font-medium text-slate-700"
+      <div className="relative">
+        {/* Header */}
+        <header className="glass border-b border-slate-200/50 sticky top-0 z-50">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+            <Logo withTagline />
+            <nav className="flex items-center gap-3">
+              <Link
+                href="/app"
+                className="btn btn-secondary text-xs"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  タイトル
-                </label>
-                <input
-                  id="title"
-                  name="title"
-                  placeholder="例: プロダクト要件定義（未入力なら自動生成されます）"
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:bg-white focus:ring"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="category"
-                  className="mb-1 block text-sm font-medium text-slate-700"
-                >
-                  カテゴリ
-                </label>
-                <input
-                  id="category"
-                  name="category"
-                  placeholder="例: 仕様書 / 議事録 / 企画書 など"
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:bg-white focus:ring"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="rawContent"
-                  className="mb-1 block text-sm font-medium text-slate-700"
-                >
-                  本文（AI 要約の元になるテキスト）
-                </label>
-                <p className="mb-2 text-xs text-slate-500">
-                  この本文をもとに AI が要約とタグ（3 つ）を自動生成します。PDF
-                  / Word
-                  ファイルをアップロードした場合は、その中身のテキストがここに自動で保存されます。
-                </p>
-                <textarea
-                  id="rawContent"
-                  name="rawContent"
-                  rows={12}
-                  placeholder="ドキュメント本文を貼り付けてください。"
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:bg-white focus:ring"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="file"
-                  className="mb-1 block text-sm font-medium text-slate-700"
-                >
-                  PDF / Word ファイルから読み込む
-                </label>
-                <p className="mb-2 text-xs text-slate-500">
-                  .pdf / .doc / .docx に対応（10MB
-                  まで）。アップロードされたファイルはテキストに変換して保存されます。
-                </p>
-                <input
-                  id="file"
-                  name="file"
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  className="hidden"
-                />
-                <NewFileDropZone inputId="file" />
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <p className="text-xs text-slate-500">
-                  右のボタンで AI 要約あり・なしを選べます。AI
-                  ありは少し時間がかかります。
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="reset"
-                    className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                  >
-                    入力内容を破棄
-                  </button>
-                  <NewSubmitButtons
-                    fastAction={fastCreateDocument}
-                    aiAction={createDocument}
-                    defaultMode={aiSettings.autoSummaryOnNew ? "ai" : "fast"}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
                   />
-                </div>
-              </div>
-            </form>
+                </svg>
+                <span>一覧に戻る</span>
+              </Link>
+            </nav>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-5xl px-4 py-8">
+          {/* Page Header */}
+          <div className="mb-8 animate-fade-in">
+            <h1 className="text-2xl font-bold text-slate-900">新規ドキュメント</h1>
+            <p className="mt-2 text-sm text-slate-500">
+              テキストを入力するか、PDF / Word ファイルをアップロードしてドキュメントを作成
+            </p>
           </div>
 
-          {/* 右カラム：AI の挙動と使い方ガイド */}
-          <aside className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-xs text-slate-700 shadow-sm">
-            <div>
-              <p className="text-[11px] font-semibold text-emerald-700">
-                DocuFlow について
-              </p>
-              <p className="mt-1 leading-relaxed">
-                DocuFlow は、AI 要約で PDF や Word
-                資料を一瞬で整理するためのミニ SaaS
-                です。営業資料・企画書・議事録など、バラバラなドキュメントを 1
-                つのワークスペースに集約できます。
-              </p>
+          <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+            {/* Main Form */}
+            <div className="card p-6 lg:p-8 animate-fade-in-up">
+              <form className="space-y-6" action={createDocument}>
+                {/* Title */}
+                <div>
+                  <label
+                    htmlFor="title"
+                    className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
+                      📝
+                    </span>
+                    タイトル
+                    <span className="text-xs font-normal text-slate-400">
+                      （空欄ならAIが自動生成）
+                    </span>
+                  </label>
+                  <input
+                    id="title"
+                    name="title"
+                    placeholder="例: プロダクト要件定義書"
+                    className="input"
+                  />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label
+                    htmlFor="category"
+                    className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
+                      🏷️
+                    </span>
+                    カテゴリ
+                    <span className="text-xs font-normal text-slate-400">
+                      （空欄ならAIが自動判定）
+                    </span>
+                  </label>
+                  <input
+                    id="category"
+                    name="category"
+                    placeholder="例: 仕様書 / 議事録 / 企画書"
+                    className="input"
+                  />
+                </div>
+
+                {/* Content */}
+                <div>
+                  <label
+                    htmlFor="rawContent"
+                    className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
+                      📄
+                    </span>
+                    本文
+                  </label>
+                  <p className="mb-3 text-xs text-slate-500">
+                    この本文をもとにAIが要約とタグ（最大3つ）を自動生成します。
+                    ファイルをアップロードした場合は、抽出されたテキストが自動で保存されます。
+                  </p>
+                  <textarea
+                    id="rawContent"
+                    name="rawContent"
+                    rows={14}
+                    placeholder="ドキュメントの本文を入力またはペーストしてください..."
+                    className="input resize-none font-mono text-sm"
+                  />
+                </div>
+
+                {/* File Upload */}
+                <div>
+                  <label className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
+                      📁
+                    </span>
+                    ファイルアップロード
+                  </label>
+                  <p className="mb-3 text-xs text-slate-500">
+                    PDF / Word（.doc, .docx）に対応。最大10MBまで。
+                  </p>
+                  <input
+                    id="file"
+                    name="file"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                  />
+                  <NewFileDropZone inputId="file" />
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-slate-200 pt-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <p className="text-xs text-slate-500">
+                      💡 AI要約ありは処理に数秒かかります。急ぎの場合は「高速保存」をお使いください。
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="reset"
+                        className="btn btn-secondary text-xs"
+                      >
+                        クリア
+                      </button>
+                      <NewSubmitButtons
+                        fastAction={fastCreateDocument}
+                        aiAction={createDocument}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </form>
             </div>
 
-            <div>
-              <p className="text-[11px] font-semibold text-slate-800">
-                AI 要約の流れ
-              </p>
-              <ol className="mt-2 space-y-1.5">
-                <li>1. テキスト入力 or PDF / Word をアップロード</li>
-                <li>2. AI が本文を解析して要約を生成</li>
-                <li>3. 本文から関連するタグ（最大 3 つ）を抽出</li>
-                <li>4. Supabase に保存され、一覧画面から検索できます</li>
-              </ol>
-            </div>
+            {/* Sidebar */}
+            <aside className="space-y-4 animate-fade-in stagger-3">
+              {/* About Card */}
+              <div className="card p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-sky-500 text-sm text-white">
+                    ✨
+                  </div>
+                  <h3 className="font-semibold text-slate-900">AI機能について</h3>
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  DocuFlowは GPT-4 を活用して、ドキュメントの要約・タグ付け・タイトル生成を自動で行います。日本語に最適化されています。
+                </p>
+              </div>
 
-            <div>
-              <p className="text-[11px] font-semibold text-slate-800">
-                おすすめの使い方
-              </p>
-              <ul className="mt-2 space-y-1.5 list-disc pl-4">
-                <li>
-                  長い PDF 資料をアップロードして、要点だけを素早く把握する
-                </li>
-                <li>
-                  会議の議事録を貼り付けて、後から検索しやすいタグを自動付与する
-                </li>
-                <li>
-                  社内ナレッジやマニュアルをカテゴリごとに整理してストックする
-                </li>
-              </ul>
-            </div>
-          </aside>
-        </section>
-      </main>
+              {/* Process Steps */}
+              <div className="card p-5">
+                <h3 className="font-semibold text-slate-900 mb-4">処理の流れ</h3>
+                <ol className="space-y-3">
+                  {[
+                    { icon: "1️⃣", text: "テキスト入力 or ファイルアップロード" },
+                    { icon: "2️⃣", text: "AIが本文を解析して要約を生成" },
+                    { icon: "3️⃣", text: "関連タグ（最大3つ）を自動抽出" },
+                    { icon: "4️⃣", text: "データベースに保存して一覧に反映" },
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-3 text-xs text-slate-600">
+                      <span className="text-base">{step.icon}</span>
+                      <span>{step.text}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              {/* Tips Card */}
+              <div className="card p-5 bg-gradient-to-br from-amber-50/50 to-orange-50/50">
+                <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <span>💡</span>
+                  おすすめの使い方
+                </h3>
+                <ul className="space-y-2 text-xs text-slate-600">
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-500">•</span>
+                    <span>長いPDF資料をアップロードして要点だけを素早く把握</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-500">•</span>
+                    <span>会議の議事録を貼り付けて検索しやすいタグを自動付与</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-500">•</span>
+                    <span>社内ナレッジをカテゴリごとに整理してストック</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Supported Formats */}
+              <div className="card p-5">
+                <h3 className="font-semibold text-slate-900 mb-3">対応フォーマット</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { ext: "PDF", color: "bg-red-50 text-red-600" },
+                    { ext: "DOC", color: "bg-blue-50 text-blue-600" },
+                    { ext: "DOCX", color: "bg-blue-50 text-blue-600" },
+                  ].map((format) => (
+                    <div
+                      key={format.ext}
+                      className={`rounded-lg px-3 py-2 text-center text-xs font-medium ${format.color}`}
+                    >
+                      .{format.ext.toLowerCase()}
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-[11px] text-slate-500">
+                  最大ファイルサイズ: 10MB
+                </p>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

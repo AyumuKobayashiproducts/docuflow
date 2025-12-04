@@ -9,10 +9,7 @@ type ActivityAction =
   | "toggle_pinned"
   | "enable_share"
   | "disable_share"
-  | "add_comment"
-  | "archive_document"
-  | "restore_document"
-  | "view_share";
+  | "add_comment";
 
 type ActivityPayload = {
   documentId?: string;
@@ -22,7 +19,7 @@ type ActivityPayload = {
 
 export async function logActivity(
   action: ActivityAction,
-  payload: ActivityPayload = {},
+  payload: ActivityPayload = {}
 ) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
@@ -39,3 +36,8 @@ export async function logActivity(
     metadata: details ? { details } : null,
   });
 }
+
+
+
+
+

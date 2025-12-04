@@ -5,7 +5,6 @@ export default defineConfig({
     environment: "node",
     globals: true,
     coverage: {
-      provider: "v8",
       reporter: ["text", "lcov"],
       reportsDirectory: "./coverage",
       exclude: ["**/node_modules/**", "**/.next/**"],

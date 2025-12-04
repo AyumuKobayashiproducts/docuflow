@@ -1,500 +1,498 @@
-![DocuFlow ダッシュボード](docs/screenshots/dashboard.png)
+<div align="center">
 
-**DocuFlow – AI 要約で、PDF / Word 資料を一瞬で整理するドキュメントワークスペース**
+<br />
 
-![CI](https://github.com/hashimotonobuaki123-cmyk/docuflow/actions/workflows/ci.yml/badge.svg)
-![Coverage](https://img.shields.io/badge/coverage-local--lcov-green)
+# 📄 DocuFlow
 
-本番環境: https://docuflow-azure.vercel.app
+### AI-Powered Document Workspace
 
-## DocuFlow
+**PDF・Word を一瞬で要約。スマートなドキュメント管理を。**
 
-AI 要約とタグ自動生成で、テキスト / PDF / Word ドキュメントを整理するミニ SaaS です。  
-Next.js 16（App Router）+ Supabase + OpenAI で構成された学習・ポートフォリオ向けプロジェクトです。
+<br />
 
-### デモ / Live
+[![CI](https://img.shields.io/github/actions/workflow/status/tanasho/dooai/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI)](https://github.com/tanasho/dooai/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 
-- 本番環境: https://docuflow-azure.vercel.app
-  - 初期表示で `/auth/login` にリダイレクトされます（ログイン後は `/app` へ）。
-  - README 冒頭と下部の「スクリーンショット」セクションの画像は、本番と同等の UI をローカルで撮影したものです。
+<br />
 
-### このリポジトリで見せたいポイント
+[**🌐 Live Demo**](https://docuflow-azure.vercel.app) &nbsp;&nbsp;·&nbsp;&nbsp; [**📖 Docs**](docs/) &nbsp;&nbsp;·&nbsp;&nbsp; [**🐛 Bug Report**](https://github.com/tanasho/dooai/issues) &nbsp;&nbsp;·&nbsp;&nbsp; [**✨ Feature Request**](https://github.com/tanasho/dooai/issues)
 
-- **フルスタック構成**: Next.js 16 App Router + Supabase + OpenAI を使った、認証 / DB / AI 要約 / ファイルアップロードまで一通りそろったミニ SaaS。
-- **実務寄りのユースケース**: 会議メモ・仕様書・企画書など、実際の仕事で扱うドキュメントを AI 要約で整理するワークスペースを想定。
-- **SaaS っぽい UI**: ホワイトベースで Money Forward 系の SaaS を意識したダッシュボード / サイドバー / 設定画面。D&D アップロードやインサイトカード、ショートカットヘルプなども実装。ユーザー設定（AI動作、共有リンク、ダッシュボード表示）をカスタマイズ可能。
-- **運用を意識した設計**: `documents` / `document_versions` / `activity_logs` と RLS ポリシーを用意し、`docs/architecture.md` に RLS 本番対応プランや環境変数の整理 (`lib/config.ts`) を明文化。
-- **品質・テスト**: Vitest によるユニットテスト（AI 生成ロジック / ドキュメント検索）、GitHub Actions による CI（lint / test / coverage / build）を設定し、README 冒頭にバッジで可視化。
+<br />
 
-### 主な機能
+<img src="docs/screenshots/dashboard.png" alt="DocuFlow Dashboard" width="90%" style="border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);" />
 
-- **メール & パスワード認証**
-  - `/auth/signup` サインアップ
-  - `/auth/login` ログイン
-  - `/auth/forgot` パスワードリセットメール送信
-  - `/auth/reset` リセットリンクからのパスワード変更
-  - `/auth/logout` ログアウト
+<br />
+<br />
 
-- **ドキュメント管理（ログイン後 `/app`）**
-  - タイトル・カテゴリ・本文・要約・タグを持つドキュメント一覧
-  - フルテキスト検索（タイトル / 要約 / 本文 / タグ）
-  - カテゴリフィルタ、作成日の昇順 / 降順ソート
-  - 詳細検索（作成日 From/To、共有中だけ、お気に入りだけ、ピンだけ）
-  - ★ お気に入り / 📌 ピン留め（ソート時にピン留め優先）
-  - `/documents/[id]` で詳細表示、`/documents/[id]/edit` で編集
-  - 変更前の内容を `document_versions` テーブルに保存して簡易バージョン履歴
-  - アーカイブ / 一括削除 / 一括復元（アーカイブ一覧）による柔らかい削除運用
-  - ダッシュボード上のドラッグ＆ドロップで PDF / Word からカードを自動生成
-  - インサイトカード（直近30日件数 / カテゴリ Top3 / 共有リンク閲覧合計 など）
+</div>
 
-- **共有リンク（公開ビュー）**
-  - `/documents/[id]` から「共有リンクを発行」すると、ログイン不要の閲覧用 URL（例: `/share/<token>`）を生成
-  - 共有リンクはいつでも停止可能（DB 上では `share_token` を null に戻す）
-  - 有効期限を 7日 / 30日 / 無期限から選択可能（`share_expires_at` を利用）
-  - 閲覧アクセスは `activity_logs` の `view_share` として記録し、ダッシュボードのインサイトで合計閲覧回数を集計
-  - 公開ビュー `/share/[token]` では要約・本文のみ閲覧でき、編集や削除は不可
+<br />
 
-- **AI 連携**
-  - **タイトル自動生成**：タイトル欄が空の場合、本文から日本語タイトルを自動生成
-  - **要約 & タグ自動生成**：`gpt-4.1-mini` を利用して 3〜5 行の要約と最大 3 タグを生成
-  - 日本語ドキュメントを想定したプロンプト設計
+## 💡 About
 
-- **ファイルアップロード**
-  - `/new` で以下のファイルをアップロード可能
-    - `.pdf`
-    - `.doc` / `.docx`
-  - 最大 **10MB** までを許可
-  - PDF は `pdf-parse`、Word は `mammoth` を使ってテキスト抽出し、本文として保存
-  - タイトル未入力なら、この抽出テキストを元に AI でタイトル生成
+**DocuFlow** は、AI を活用した次世代のドキュメント管理プラットフォームです。
 
-- **アカウント削除**
-  - `/app` 下部の「アカウントの削除」から
-    - ユーザーの `documents` / `document_versions` を削除
-    - Supabase Auth のユーザー自体を削除（`service_role` キー使用、開発用途想定）
-  - 実行前にブラウザの `confirm` ダイアログで確認
+会議メモ、仕様書、企画書などのドキュメントをドラッグ＆ドロップするだけで、AI が自動的に内容を分析し、**要約**・**タグ付け**・**タイトル生成**を実行。煩雑なドキュメント整理を劇的に効率化します。
 
-- **アクティビティログ**
-  - ドキュメントの新規作成 / 更新 / 削除 / お気に入り・ピンの変更 / 共有リンクの有効化・無効化を `activity_logs` テーブルに記録
-  - `/app` の下部に「最近のアクティビティ」として直近 10 件を一覧表示
+<br />
 
-- **コメント / メモ**
-  - 各ドキュメント詳細ページで、自分用のコメントや TODO を追加可能
-  - `document_comments` テーブルに保存し、時系列に表示
+<div align="center">
 
-- **AI 要約の再生成**
-  - ドキュメント詳細から「要約を再生成」ボタンを押すと、最新の本文をもとに AI による要約・タグを再作成
+| 🎯 課題 | ✨ DocuFlow の解決策 |
+|:---:|:---:|
+| ドキュメントが増えると探せない | AI が自動でタグ付け & 全文検索 |
+| 要約を書くのが面倒 | GPT-4 が 3〜5 行で自動要約 |
+| PDF・Word の中身が検索できない | テキスト抽出して検索可能に |
+| 共有が手間 | ワンクリックで共有リンク発行 |
 
-- **設定ページ（`/settings`）**
-  - **AI 設定**
-    - 新規ドキュメント作成時に「保存して要約生成」を既定のおすすめボタンにするかどうか
-    - ダッシュボードのファイルアップロード時に AI 要約・タグを自動生成するかどうか
-  - **共有リンク設定**
-    - 新しく共有リンクを作成する際のデフォルト有効期限（7日 / 30日 / 無期限）
-  - **ダッシュボード設定**
-    - デフォルトの並び順（新しい順 / 古い順 / ピン留め優先）
-    - アーカイブされたドキュメントをデフォルトで表示するかどうか
-    - 共有中のドキュメントのみをデフォルトで表示するかどうか
-  - **アカウント削除**
-    - ユーザー自身のアカウントと関連データを完全に削除
+</div>
 
-- **その他**
-  - ダッシュボードでのキーボードショートカット（例: `/` で検索フォーカス、`Shift + D` でカード削除）とショートカットヘルプモーダル。
-  - ドキュメント詳細から Markdown (`.md`) としてエクスポート可能。
+<br />
 
----
+## ✨ Features
 
-### 詳細ドキュメント（設計・仕様）
+<table>
+<tr>
+<td width="33%" valign="top">
 
-- [機能仕様書（DocuFlow Spec）](docs/spec-docuflow.md)
-- [画面一覧 & 画面遷移（UI Flow）](docs/ui-flow.md)
-- [DB スキーマ / テーブル定義](docs/db-schema.md)
-- [アーキテクチャ設計メモ](docs/architecture.md)
-- [デプロイメントガイド](docs/deployment.md)
-- [トラブルシューティング](docs/troubleshooting.md)
+### 🤖 AI Auto-Summary
 
----
+GPT-4.1-mini による高精度な自動要約。日本語に最適化されたプロンプトで、文書の要点を 3〜5 行に凝縮。
 
-## 技術スタック
+</td>
+<td width="33%" valign="top">
 
-- **フロントエンド**
-  - Next.js 16 (App Router)
-  - React 19
-  - TypeScript
-  - Tailwind CSS（シンプルな SaaS 風 UI）
+### 🏷️ Smart Tagging
 
-- **バックエンド / インフラ**
-  - Supabase
-    - Auth（メール + パスワード）
-    - PostgreSQL（`documents`, `document_versions` など）
-  - OpenAI API（`gpt-4.1-mini`）
+文書内容を解析し、最適なタグを最大 3 つ自動生成。後から探しやすいドキュメント管理を実現。
 
-- **ユーティリティ**
-  - `pdf-parse`（PDF → テキスト）
-  - `mammoth`（Word → テキスト）
+</td>
+<td width="33%" valign="top">
 
----
+### 📄 File Support
 
-## セットアップ
+PDF・Word ファイルをドラッグ＆ドロップ。`pdf-parse` / `mammoth` でテキスト抽出し、即座に AI 処理。
 
-### 1. 依存関係のインストール
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
 
-```bash
-cd "/Users/tanasho/Desktop/作成中ポートフォリオデータ/dooai"
-npm install
+### 🔍 Full-Text Search
+
+タイトル・要約・本文・タグを横断検索。カテゴリフィルタ、お気に入り、ピン留めで素早くアクセス。
+
+</td>
+<td width="33%" valign="top">
+
+### 🔗 One-Click Share
+
+共有リンクをワンクリックで発行。認証不要で閲覧可能な公開ビュー。いつでも停止可能。
+
+</td>
+<td width="33%" valign="top">
+
+### 📝 Version History
+
+編集履歴を自動保存。過去バージョンをいつでも確認でき、変更の追跡が容易に。
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### ⌨️ Command Palette
+
+`⌘K` で開くコマンドパレット。Notion/Linear風のモダンなナビゲーションを実現。
+
+</td>
+<td width="33%" valign="top">
+
+### 🌙 Dark Mode
+
+ライト / ダーク / システム設定の 3 モード対応。目に優しいテーマ切り替え。
+
+</td>
+<td width="33%" valign="top">
+
+### 🔔 Toast Notifications
+
+操作結果をリアルタイム通知。成功・エラー・警告を美しいトーストで表示。
+
+</td>
+</tr>
+</table>
+
+<br />
+
+<div align="center">
+
+### ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|:--------:|:-------|
+| `⌘K` | コマンドパレットを開く |
+| `?` | ショートカットヘルプを表示 |
+| `G` `D` | ダッシュボードへ移動 |
+| `G` `N` | 新規作成ページへ移動 |
+| `/` | 検索にフォーカス |
+
+</div>
+
+<br />
+
+## 🛠️ Tech Stack
+
+<div align="center">
+
+### Frontend
+
+[![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+
+### Backend & Infrastructure
+
+[![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+
+### Testing & Quality
+
+[![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
+[![ESLint](https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white)](https://eslint.org/)
+[![Prettier](https://img.shields.io/badge/Prettier-F7B93E?style=for-the-badge&logo=prettier&logoColor=black)](https://prettier.io/)
+
+</div>
+
+<br />
+
+## 📸 Screenshots
+
+<div align="center">
+
+### 🏠 メイン画面
+
+<table>
+<tr>
+<td align="center" width="50%">
+
+**Dashboard**
+<br />
+ドキュメント一覧・検索・フィルタリング
+
+<img src="docs/screenshots/dashboard.png" alt="Dashboard" width="100%" />
+
+</td>
+<td align="center" width="50%">
+
+**New Document**
+<br />
+AI要約付き新規作成・ファイルアップロード
+
+<img src="docs/screenshots/new-document.png" alt="New Document" width="100%" />
+
+</td>
+</tr>
+</table>
+
+### 📄 ドキュメント管理
+
+<table>
+<tr>
+<td align="center" width="50%">
+
+**Document Detail**
+<br />
+詳細表示・AI要約・タグ・バージョン履歴
+
+<img src="docs/screenshots/document-detail.png" alt="Document Detail" width="100%" />
+
+</td>
+<td align="center" width="50%">
+
+**Share View**
+<br />
+認証不要の公開共有ページ
+
+<img src="docs/screenshots/share-view.png" alt="Share View" width="100%" />
+
+</td>
+</tr>
+</table>
+
+### 🔐 認証 & 設定
+
+<table>
+<tr>
+<td align="center" width="33%">
+
+**Login**
+<br />
+メール認証
+
+<img src="docs/screenshots/login.png" alt="Login" width="100%" />
+
+</td>
+<td align="center" width="33%">
+
+**Signup**
+<br />
+新規アカウント作成
+
+<img src="docs/screenshots/signup.png" alt="Signup" width="100%" />
+
+</td>
+<td align="center" width="33%">
+
+**Settings**
+<br />
+ユーザー設定
+
+<img src="docs/screenshots/settings.png" alt="Settings" width="100%" />
+
+</td>
+</tr>
+</table>
+
+</div>
+
+<br />
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+```
+Node.js >= 22.x
+npm >= 10.x
+Supabase Account
+OpenAI API Key
 ```
 
-### 2. 環境変数の設定（`.env.local`）
+### Installation
 
-プロジェクト直下に `.env.local` を作成し、次のように設定します。
+```bash
+# Clone the repository
+git clone https://github.com/tanasho/dooai.git
+cd dooai
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your credentials
+
+# Start development server
+npm run dev
+```
+
+### Environment Variables
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=（Supabase の Project URL）
-NEXT_PUBLIC_SUPABASE_ANON_KEY=（anon public キー）
-OPENAI_API_KEY=（OpenAI の API キー）
-# アカウント削除機能を有効にする場合のみ
-SUPABASE_SERVICE_ROLE_KEY=（Supabase の service_role キー）
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# OpenAI
+OPENAI_API_KEY=your-openai-api-key
+
+# Optional: Account deletion
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### 3. Supabase テーブル
+<br />
 
-最低限、以下のテーブルが必要です（実際のカラムは Supabase ダッシュボードで作成済み想定）。
+## 📁 Project Structure
 
-- `documents`
-  - `id` (uuid, PK)
-  - `user_id` (uuid)
-  - `title` (text)
-  - `category` (text)
-  - `raw_content` (text)
-  - `summary` (text)
-  - `tags` (text[])
-  - `is_favorite` (boolean)
-  - `is_pinned` (boolean)
-  - `share_token` (text, nullable) …… 共有リンク用トークン
-  - `share_expires_at` (timestamptz, nullable) …… 共有リンクの有効期限（現状は未使用）
-  - `created_at` (timestamptz, default now())
-
-- `document_versions`
-  - `id` (uuid, PK)
-  - `document_id` (uuid, FK → documents.id)
-  - `user_id` (uuid)
-  - `title` / `category` / `raw_content` / `summary` / `tags`
-  - `created_at` (timestamptz, default now())
-
-- `activity_logs`
-  - `id` (uuid, PK)
-  - `user_id` (uuid)
-  - `document_id` (uuid, nullable)
-  - `document_title` (text, nullable)
-  - `action` (text) …… `create_document` / `update_document` / `delete_document` / `toggle_favorite` / `toggle_pinned` / `enable_share` / `disable_share` / `add_comment` / `view_share` / `archive_document` / `restore_document`
-  - `metadata` (jsonb, nullable) …… 追加情報（例: on/off など）
-  - `created_at` (timestamptz, default now())
-
-- `user_settings`
-  - `user_id` (uuid, PK)
-  - `ai_auto_summary_on_new` (boolean, default true) …… 新規作成時の AI 要約デフォルト
-  - `ai_auto_summary_on_upload` (boolean, default true) …… アップロード時の AI 要約デフォルト
-  - `default_share_expires_in` (text, default '7') …… 共有リンクのデフォルト有効期限
-  - `default_sort` (text, default 'desc') …… ダッシュボードのデフォルト並び順
-  - `default_show_archived` (boolean, default false) …… アーカイブ表示のデフォルト
-  - `default_shared_only` (boolean, default false) …… 共有中のみ表示のデフォルト
-
-- `document_comments`
-  - `id` (uuid, PK)
-  - `document_id` (uuid, FK → documents.id)
-  - `user_id` (uuid, nullable)
-  - `content` (text)
-  - `created_at` (timestamptz, default now())
-
-### Supabase 側でやってほしい SQL（1回だけ）
-
-以下の SQL を Supabase の SQL Editor で実行してください。
-
-#### `user_settings` テーブルの作成
-
-```sql
-create table if not exists public.user_settings (
-  user_id uuid primary key,
-  ai_auto_summary_on_new boolean not null default true,
-  ai_auto_summary_on_upload boolean not null default true,
-  default_share_expires_in text not null default '7',
-  default_sort text not null default 'desc',
-  default_show_archived boolean not null default false,
-  default_shared_only boolean not null default false
-);
+```
+dooai/
+├── 📂 app/                     # Next.js App Router
+│   ├── 📂 app/                # Dashboard & workspace
+│   ├── 📂 auth/               # Authentication pages
+│   │   ├── login/
+│   │   ├── signup/
+│   │   ├── forgot/
+│   │   └── reset/
+│   ├── 📂 documents/          # Document CRUD
+│   ├── 📂 new/                # Create new document
+│   └── 📂 share/              # Public share view
+│
+├── 📂 components/             # Reusable UI components
+├── 📂 lib/                    # Core utilities
+│   ├── ai.ts                 # OpenAI integration
+│   ├── filterDocuments.ts    # Search & filter logic
+│   └── supabase*.ts          # Database clients
+│
+├── 📂 tests/                  # Test suites
+├── 📂 docs/                   # Documentation
+└── 📂 types/                  # TypeScript definitions
 ```
 
-> 既に `user_settings` テーブルが存在する場合は、不足しているカラムだけを追加してください：
-> ```sql
-> alter table public.user_settings
-> add column if not exists default_share_expires_in text not null default '7',
-> add column if not exists default_sort text not null default 'desc',
-> add column if not exists default_show_archived boolean not null default false,
-> add column if not exists default_shared_only boolean not null default false;
-> ```
+<br />
 
-### RLS / マルチテナント設計（Supabase）
+## 🏗️ Architecture
 
-本番運用を想定した場合、**各ユーザーが自分のデータだけを読める / 書ける** ようにするため、  
-Supabase の Row Level Security（RLS）を前提とした設計にしています。
-
-- 開発中（ローカル）: RLS は **disabled** のままにしておき、挙動確認を優先
-- 本番運用時: RLS を **enabled** にし、`auth.uid()` と `user_id` を紐付けるポリシーを有効化
-
-#### 1. RLS の有効化（テーブル単位）
-
-```sql
-alter table public.documents enable row level security;
-alter table public.document_versions enable row level security;
-alter table public.activity_logs enable row level security;
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                              Client                                   │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌────────────┐     │
+│  │   /app     │  │   /new     │  │ /documents │  │   /share   │     │
+│  │ Dashboard  │  │  Upload    │  │   Detail   │  │   Public   │     │
+│  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘  └─────┬──────┘     │
+└────────┼───────────────┼───────────────┼───────────────┼─────────────┘
+         │               │               │               │
+         └───────────────┴───────┬───────┴───────────────┘
+                                 │
+                                 ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│                       Next.js 16 App Router                          │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                    Server Components                         │    │
+│  │  • Data fetching with Supabase                              │    │
+│  │  • AI processing with OpenAI                                │    │
+│  │  • File parsing (PDF/Word)                                  │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │                       Middleware                             │    │
+│  │  • Authentication guard                                      │    │
+│  │  • Route protection                                         │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────┬───────────────────────────────────┘
+                                   │
+                   ┌───────────────┴───────────────┐
+                   │                               │
+                   ▼                               ▼
+┌──────────────────────────────┐   ┌──────────────────────────────┐
+│          Supabase            │   │           OpenAI             │
+│  ┌────────────────────────┐  │   │  ┌────────────────────────┐  │
+│  │    Authentication      │  │   │  │     GPT-4.1-mini       │  │
+│  │    • Email/Password    │  │   │  │  • Summary generation  │  │
+│  │    • Session mgmt      │  │   │  │  • Tag extraction      │  │
+│  └────────────────────────┘  │   │  │  • Title generation    │  │
+│  ┌────────────────────────┐  │   │  └────────────────────────┘  │
+│  │      PostgreSQL        │  │   └──────────────────────────────┘
+│  │  • documents           │  │
+│  │  • document_versions   │  │
+│  │  • activity_logs       │  │
+│  │  • RLS policies        │  │
+│  └────────────────────────┘  │
+└──────────────────────────────┘
 ```
 
-#### 2. `documents` テーブル（本人のドキュメントだけフルアクセス）
+<br />
 
-```sql
-create policy "documents_owner_all"
-on public.documents
-for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-```
-
-#### 3. `documents` の共有リンク閲覧用（誰でも読めるが、share_token 付き行だけ）
-
-```sql
-create policy "documents_shared_read"
-on public.documents
-for select
-using (share_token is not null);
-```
-
-#### 4. `document_versions` テーブル（本人の履歴だけフルアクセス）
-
-```sql
-create policy "document_versions_owner_all"
-on public.document_versions
-for all
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
-```
-
-#### 5. `activity_logs` テーブル（本人のログだけ参照 / 挿入）
-
-```sql
--- 自分のログだけ読める
-create policy "activity_logs_owner_read"
-on public.activity_logs
-for select
-using (auth.uid() = user_id);
-
--- 自分自身としてのみ書き込み可能
-create policy "activity_logs_owner_insert"
-on public.activity_logs
-for insert
-with check (auth.uid() = user_id);
-```
-
-> メモ: 現状の実装では、サーバー側 Supabase クライアントは anon key ベースで動かしており、  
-> `auth.uid()` を正しく解決するには `@supabase/auth-helpers-nextjs` 等でユーザートークン連携が必要です。  
-> そのため、ローカル開発では「RLS disabled + ポリシーだけ定義」という状態にしておき、  
-> 将来的に Auth Helpers を導入した段階で RLS を enabled に切り替える想定です。
-
----
-
-## 開発用コマンド
+## 💻 Development
 
 ```bash
-# 開発サーバー起動
+# Run development server
 npm run dev
 
-# 型チェック & Lint
-npm run lint
-
-# テスト（Vitest）
+# Run tests
 npm test
 
-# カバレッジ付きテスト
+# Run tests with coverage
 npm run test:coverage
 
-# 本番ビルド & 起動
-npm run build
-npm start
-
-# スクリーンショット自動生成（本番環境から）
-BASE_URL=https://docuflow-azure.vercel.app npm run screenshots
-
-# ログインが必要なページも自動生成（環境変数でログイン情報を指定）
-BASE_URL=https://docuflow-azure.vercel.app \
-SCREENSHOT_EMAIL=your-email@example.com \
-SCREENSHOT_PASSWORD=your-password \
-npm run screenshots
-```
-
-```bash
-# 開発サーバー起動
-npm run dev
-
-# 型チェック & Lint
+# Lint code
 npm run lint
 
-# テスト（Vitest）
-npm test
+# Format code
+npm run format
 
-# カバレッジ付きテスト
-npm run test:coverage
+# Type check
+npm run type-check
 
-# 本番ビルド & 起動
+# Run all validations
+npm run validate
+
+# Build for production
 npm run build
-npm start
 ```
 
-ブラウザで `http://localhost:3000` を開くと、ログインページ（`/auth/login`）にリダイレクトされます。  
-ログイン後は `/app` のワークスペース画面に遷移します。
+<br />
 
-> 本番環境にデプロイした場合は、`http://localhost:3000` の代わりに  
-> Vercel などの発行した URL（例: `https://docuflow.example.com`）にアクセスします。
+## 📖 Documentation
 
----
+| Document | Description |
+|:---------|:------------|
+| [📋 Specification](docs/spec-docuflow.md) | 機能仕様の詳細 |
+| [🎨 UI Flow](docs/ui-flow.md) | 画面遷移とユーザーフロー |
+| [🗄️ Database Schema](docs/db-schema.md) | テーブル定義と RLS |
+| [🏗️ Architecture](docs/architecture.md) | システム設計 |
 
-## スクリーンショット（UI イメージ）
+<br />
 
-GitHub 上で見たときに UI の雰囲気が一目で伝わるよう、`docs/screenshots` 配下の実際の画面キャプチャをそのまま貼っています。
+## 🗺️ Roadmap
 
-![ダッシュボード画面](docs/screenshots/dashboard.png)
+### ✅ Completed
 
-> メインワークスペース画面。左サイドバー、概要カード（ドキュメント総数・ピン留め・お気に入り・インサイト）、カテゴリ別トップ3ミニグラフ、ドラッグ＆ドロップアップロード、詳細検索フォーム（日付範囲・共有中フィルタ含む）、ドキュメントカード一覧、最近のアクティビティを表示。
+- [x] 基本的な CRUD 機能
+- [x] AI 要約・タグ生成
+- [x] PDF / Word 対応
+- [x] 共有リンク機能
+- [x] バージョン履歴
+- [x] ⌨️ コマンドパレット (`⌘K`)
+- [x] 🌙 ダークモード対応
+- [x] 🔔 トースト通知
+- [x] ⌨️ キーボードショートカット
+- [x] 📱 レスポンシブデザイン
 
-![ログインページ](docs/screenshots/login.png)
+### 🚧 In Progress
 
-> メールアドレスとパスワードでログインする認証画面。
+- [ ] 🏢 チーム / 組織対応
+- [ ] 🔍 ベクトル検索 (pgvector)
+- [ ] 📊 バージョン差分表示
+- [ ] 🌐 多言語対応 (i18n)
 
-![サインアップページ](docs/screenshots/signup.png)
+<br />
 
-> 新規アカウント作成画面。
+## 🤝 Contributing
 
-![新規ドキュメント作成画面](docs/screenshots/new-document.png)
+コントリビューションは大歓迎です！
 
-> 2 カラムレイアウトの新規作成画面。左にフォーム（タイトル / カテゴリ / 本文 / ファイルアップロード）、右に AI 要約の説明と使い方ガイド。
+<a href="https://github.com/tanasho/dooai/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=tanasho/dooai" />
+</a>
 
-![ドキュメント詳細画面](docs/screenshots/document-detail.png)
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'feat: Add AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-> AI 要約、メタ情報（文字数・推定読了時間）、コメント欄、共有リンクボタン、バージョン履歴などをまとめた詳細ビュー。
+詳細は [CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 
-![設定画面](docs/screenshots/settings.png)
+<br />
 
-> AI設定・共有リンク設定・ダッシュボード設定・アカウント削除セクションを含む設定ページ。
+## 📄 License
 
-![共有リンク閲覧画面](docs/screenshots/share-view.png)
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
-> 共有リンクからアクセスする公開ビュー。要約と本文のみ閲覧可能（編集不可）。
-
----
-
-### 📸 スクリーンショットの追加方法
-
-現在、以下のスクリーンショットが必要です。実際の画面をキャプチャして `docs/screenshots/` に保存してください：
-
-| ファイル名 | 説明 | 撮影する画面 |
-|-----------|------|------------|
-| `dashboard.png` | ✅ 既存 | `/app` ダッシュボード画面 |
-| `login.png` | ✅ 既存 | `/auth/login` ログインページ |
-| `signup.png` | ✅ 既存 | `/auth/signup` サインアップページ |
-| `new-document.png` | ✅ 既存 | `/new` 新規ドキュメント作成画面 |
-| `settings.png` | ✅ 既存 | `/settings` 設定画面（AI設定・共有リンク設定・ダッシュボード設定が表示されている状態） |
-| `document-detail.png` | ✅ 既存 | `/documents/[id]` ドキュメント詳細画面 |
-| `share-view.png` | ✅ 既存 | `/share/[token]` 共有リンク閲覧画面 |
-
-**撮影手順**:
-1. ローカル開発サーバー（`npm run dev`）または本番環境で各画面を開く
-2. ブラウザの開発者ツールで適切な画面サイズに調整（推奨: 1920x1080 または 1440x900）
-3. スクリーンショットを撮影（macOS: `Cmd + Shift + 4`、Windows: `Win + Shift + S`）
-4. `docs/screenshots/` に保存
-
-**動画（オプション）**:
-- デモ動画（GIF または MP4）を `docs/screenshots/demo.gif` または `docs/screenshots/demo.mp4` として追加すると、より分かりやすくなります。
-- 推奨内容: ドキュメント作成 → AI 要約生成 → 検索 → 共有リンク発行 の一連の流れ
+<br />
 
 ---
 
-## メモ
+<div align="center">
 
-このリポジトリは「DocuFlow」という名前で、以下を意識した構成になっています。
+### ⭐ Star this repo if you find it useful!
 
-- SaaS っぽい UI / ページ構成
-- 認証まわり（ログイン / サインアップ / パスワードリセット）
-- AI を絡めた実用的な機能（タイトル・要約・タグ・ファイルアップロード）
-- Next.js 16 App Router + Supabase の素直な組み合わせ
+<br />
 
-GitHub 上でポートフォリオとして見られても恥ずかしくないレベルの構成を目指しています。  
-さらに伸ばしたい場合は、料金プラン風の UI、組織単位のワークスペース、共有リンク機能などを追加していくと SaaS 感が一段と増します。
+**Built with passion using**
 
----
+[![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com/)
 
-## アーキテクチャ（設計のイメージ）
+<br />
 
-### 全体像
+[Back to Top ↑](#docuflow)
 
-```text
-ブラウザ
-  ├─ /auth/*  …… 認証系ページ（ログイン / サインアップ / パスワードリセット）
-  ├─ /app     …… ログイン後のワークスペース（検索・一覧・ピン / お気に入り / アクティビティログ）
-  ├─ /new     …… 新規ドキュメント作成（テキスト or PDF / Word アップロード）
-  ├─ /documents/[id] …… ドキュメント詳細 / 共有リンク発行
-  └─ /share/[token] …… 共有リンクからの公開閲覧ページ（認証不要）
-
-Next.js 16 (App Router)
-  ├─ Server Components / Server Actions
-  │    ├─ Supabase クエリ（documents / document_versions / activity_logs）
-  │    └─ OpenAI API 呼び出し（要約 / タグ / タイトル生成）
-  └─ Middleware
-       └─ クッキー（docuhub_ai_auth / docuhub_ai_user_id）を見て /app, /new, /documents/* をガード
-
-Supabase
-  ├─ Auth …… Email + Password
-  ├─ DB  …… documents, document_versions, activity_logs
-  └─ （任意）service_role …… アカウント削除で auth.users も削除
-
-OpenAI
-  └─ gpt-4.1-mini …… 日本語要約・タグ・タイトル生成
-```
-
-### 主なフロー
-
-- **ログイン**
-  1. `/auth/login` から Supabase Auth にサインイン
-  2. 成功したら `docuhub_ai_auth=1` と `docuhub_ai_user_id=<supabase user id>` をクッキーに保存
-  3. `middleware.ts` がこれらを見て `/app` / `/new` / `/documents/*` へのアクセスを制御
-
-- **ドキュメント新規作成（テキスト or PDF / Word）**
-  1. `/new` でタイトル・カテゴリ・本文、もしくは PDF / Word ファイルを入力
-  2. Server Action `createDocument` がフォームを受け取り、必要ならファイルを `pdf-parse` / `mammoth` でテキスト抽出
-  3. 抽出された本文を `generateTitleFromContent` / `generateSummaryAndTags` に渡して AI からタイトル・要約・タグを取得
-  4. Supabase `documents` に `user_id` 付きで保存
-  5. `/` → middleware 経由で `/app` にリダイレクトされ、一覧に反映
-
-- **一覧・検索**
-  1. `/app` で `documents` を `user_id` で絞り込み
-  2. 取得結果をフロント側でフィルタ（タイトル / 要約 / 本文 / タグ）＋カテゴリ＋並び順
-  3. ピン留めされたドキュメントを優先して表示し、★ / 📌 の Server Action で状態を更新
-
-- **編集 & バージョン履歴**
-  1. `/documents/[id]/edit` からドキュメントを更新する際、現在の内容を `document_versions` にコピーしてから本体を更新
-  2. `/documents/[id]` で最新 5 件のバージョン履歴を一覧表示
-
-- **アカウント削除**
-  1. `/app` の「アカウントを完全に削除する」を押すと、ブラウザで確認ダイアログを表示
-  2. OK の場合、Server Action `deleteAccount` が `documents` / `document_versions` を削除
-  3. `supabaseAdmin`（service_role キー利用）で Supabase Auth のユーザーも削除
-  4. `/auth/logout` にリダイレクトし、クッキーを削除してセッション終了
-
-この構成により、「Next.js 16 App Router × Supabase × OpenAI」というよくある技術スタックの中で、  
-**認証・AI 要約・タグ付け・ファイルアップロード・共有リンク・アクティビティログ・アカウント削除** までを一通り体験できるサンプルとして使えるようにしています。
-
----
-
-## 今後の拡張アイデア
-
-- **組織 / チーム対応**: `workspaces` テーブルを追加して、複数ユーザーでドキュメントを共有できる組織単位のワークスペース化
-- **料金プラン風 UI**: Free / Pro などのプランを UI 上で表現し、プランによってアップロード上限や AI 実行回数を変える
-- **より高度な RLS 運用**: `@supabase/auth-helpers-nextjs` を導入し、`auth.uid()` ベースで RLS を本番レベルで有効化
-- **バージョン比較 UI**: `document_versions` 間で差分（diff）を表示する画面を追加し、過去版との比較をしやすくする
-- **全文検索エンジン連携**: Supabase の `pgvector` もしくは外部の検索サービスと連携し、ベクトル検索による類似ドキュメント検索を実験
+</div>
