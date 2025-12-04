@@ -258,3 +258,5 @@ Supabase Dashboard の「Logs」→「API Logs」で、Vercel からのリクエ
 - モニタリングとアラートの設定
 - バックアップ戦略の検討
 
+
+

@@ -56,3 +56,5 @@ export function SearchShortcuts() {
 
   return null;
 }
+
+

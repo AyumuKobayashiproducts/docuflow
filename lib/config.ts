@@ -32,3 +32,5 @@ export function getServiceRoleKey(): string | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   return key && key.length > 0 ? key : null;
 }
+
+
