@@ -21,15 +21,24 @@ export const metadata: Metadata = {
     "DocuFlow は、AI 要約で、PDF や Word 資料を一瞬で整理するドキュメントワークスペースです。GPT-4を活用した自動要約、タグ付け、全文検索で効率的なドキュメント管理を実現します。",
   keywords: ["ドキュメント管理", "AI要約", "PDF", "Word", "タグ付け", "全文検索"],
   authors: [{ name: "DocuFlow" }],
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", type: "image/svg+xml", sizes: "512x512" },
+    ],
+    apple: "/icon.svg",
+  },
   openGraph: {
     title: "DocuFlow | AI 要約ドキュメントワークスペース",
     description: "AI 要約で、PDF / Word 資料を一瞬で整理",
     type: "website",
+    images: ["/icon.svg"],
   },
   twitter: {
     card: "summary_large_image",
     title: "DocuFlow | AI 要約ドキュメントワークスペース",
     description: "AI 要約で、PDF / Word 資料を一瞬で整理",
+    images: ["/icon.svg"],
   },
 };
 
