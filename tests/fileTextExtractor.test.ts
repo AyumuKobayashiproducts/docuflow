@@ -141,6 +141,56 @@ describe("fileTextExtractor", () => {
       expect(typeof result).toBe("string");
     });
   });
+
+  describe("日本語ファイル名の処理", () => {
+    it("日本語ファイル名のPDFを正常に処理できる", async () => {
+      const { extractTextFromFile } = await import("../lib/fileTextExtractor");
+
+      const pdfContent = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
+      const pdfFile = new File([pdfContent], "議事録_2024年12月.pdf", {
+        type: "application/pdf",
+      });
+
+      const result = await extractTextFromFile(pdfFile);
+      expect(typeof result).toBe("string");
+    });
+
+    it("日本語ファイル名のWordファイルを正常に処理できる", async () => {
+      const { extractTextFromFile } = await import("../lib/fileTextExtractor");
+
+      const docxContent = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+      const docxFile = new File([docxContent], "企画書_プロジェクトA.docx", {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+
+      const result = await extractTextFromFile(docxFile);
+      expect(typeof result).toBe("string");
+    });
+
+    it("特殊文字を含むファイル名を正常に処理できる", async () => {
+      const { extractTextFromFile } = await import("../lib/fileTextExtractor");
+
+      const pdfContent = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
+      const pdfFile = new File([pdfContent], "レポート【最終版】(修正済み).pdf", {
+        type: "application/pdf",
+      });
+
+      const result = await extractTextFromFile(pdfFile);
+      expect(typeof result).toBe("string");
+    });
+
+    it("スペースを含むファイル名を正常に処理できる", async () => {
+      const { extractTextFromFile } = await import("../lib/fileTextExtractor");
+
+      const pdfContent = new Uint8Array([0x25, 0x50, 0x44, 0x46]);
+      const pdfFile = new File([pdfContent], "meeting notes 2024.pdf", {
+        type: "application/pdf",
+      });
+
+      const result = await extractTextFromFile(pdfFile);
+      expect(typeof result).toBe("string");
+    });
+  });
 });
 
 describe("UNSUPPORTED_ERROR_MESSAGE", () => {

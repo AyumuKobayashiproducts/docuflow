@@ -99,5 +99,62 @@ test.describe("Authentication Flow", () => {
     // Should redirect to login
     await expect(page).toHaveURL(/\/auth\/login/);
   });
+
+  test("should preserve redirect URL when redirecting to login", async ({
+    page,
+  }) => {
+    // Try to access /new without login
+    await page.goto("/new");
+
+    // Should redirect to login with redirectTo parameter
+    await expect(page).toHaveURL(/\/auth\/login/);
+    const url = page.url();
+    expect(url).toContain("redirectTo");
+  });
+
+  test("should show login form validation for short password", async ({
+    page,
+  }) => {
+    await page.goto("/auth/signup");
+
+    // Fill in with short password
+    await page.getByLabel(/メールアドレス/).fill("test@example.com");
+    await page.getByLabel("パスワード", { exact: true }).fill("123");
+    await page.getByLabel(/パスワード（確認）/).fill("123");
+    await page.getByRole("checkbox").check();
+
+    // Submit form
+    await page.getByRole("button", { name: /アカウントを作成/ }).click();
+
+    // Check for error message about password length
+    await expect(page.getByText(/6文字以上/)).toBeVisible();
+  });
+
+  test("should display login page with correct branding", async ({ page }) => {
+    await page.goto("/auth/login");
+
+    // Check for DocuFlow branding
+    await expect(page.locator("text=DocuFlow").first()).toBeVisible();
+
+    // Check for feature highlights
+    await expect(page.getByText(/AI 要約/)).toBeVisible();
+  });
+
+  test("should handle forgot password flow navigation", async ({ page }) => {
+    await page.goto("/auth/login");
+
+    // Click forgot password link
+    await page.getByRole("link", { name: /パスワードを忘れた/ }).click();
+
+    // Should be on forgot password page
+    await expect(page).toHaveURL(/\/auth\/forgot/);
+
+    // Check for back to login link
+    await expect(page.getByRole("link", { name: /ログインへ戻る/ })).toBeVisible();
+
+    // Click back to login
+    await page.getByRole("link", { name: /ログインへ戻る/ }).click();
+    await expect(page).toHaveURL(/\/auth\/login/);
+  });
 });
 
