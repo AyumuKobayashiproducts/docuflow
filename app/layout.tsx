@@ -4,6 +4,8 @@ import "./globals.css";
 import { CommandPalette } from "@/components/CommandPalette";
 import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { ToastProvider } from "@/components/Toast";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,8 +28,18 @@ export const metadata: Metadata = {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/icon.svg", type: "image/svg+xml", sizes: "512x512" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
     ],
-    apple: "/icon.svg",
+    apple: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "DocuFlow",
   },
   openGraph: {
     title: "DocuFlow | AI 要約ドキュメントワークスペース",
@@ -79,6 +91,8 @@ export default function RootLayout({
           {children}
           <CommandPalette />
           <KeyboardShortcutsHelp />
+          <ServiceWorkerRegistration />
+          <PWAInstallPrompt />
         </ToastProvider>
       </body>
     </html>
