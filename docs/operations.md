@@ -45,6 +45,7 @@ DocuFlow の運用・デプロイに関するガイドラインです。
 | Vercel | フロントエンド・API | https://docuflow-azure.vercel.app |
 | Supabase | データベース・認証 | https://[project].supabase.co |
 | OpenAI | AI 要約・タグ生成 | api.openai.com |
+| GitHub Actions | CI / Supabase Migrations / Lighthouse CI | https://github.com/hashimotonobuaki123-cmyk/docuflow |
 
 ### 環境変数
 
@@ -374,6 +375,48 @@ RESEND_API_KEY=re_xxx...
 # 送信元ドメイン
 EMAIL_FROM=noreply@docuflow.app
 ```
+
+---
+
+## 🎯 SLO / SLI / Monitoring 方針
+
+DocuFlow はあくまで個人プロジェクトだが、「本番運用を想定した SaaS」として以下の SLO を目標とする。
+
+### SLO（Service Level Objective）の例
+
+| 指標 | 目標値 | 測定方法 |
+|:-----|:-------|:---------|
+| `/app` の p95 レイテンシ | 500ms 未満 | Vercel Analytics / ブラウザ計測 |
+| 5xx エラー率 | 1% 未満 | Vercel Logs / Sentry Events |
+| 認証エンドポイントの成功率 | 99% 以上 | Supabase Auth ログ |
+
+### 監視の全体像
+
+```text
+GitHub Actions
+  ├─ CI (Lint / Test / Build)
+  ├─ Playwright E2E
+  └─ Lighthouse CI (Performance / A11y / SEO)
+
+Vercel
+  ├─ Deployment Logs
+  └─ Analytics (パフォーマンス指標)
+
+Supabase
+  ├─ Query / Auth Logs
+  └─ Row Level Security の挙動確認
+
+Sentry
+  ├─ エラートラッキング
+  └─ パフォーマンス計測（トレース）
+```
+
+### 運用ルール（簡易）
+
+- main ブランチのデプロイ前に CI がすべてグリーンであること。
+- 重大な 5xx エラーや Auth エラーが増えた場合は、まず直近のデプロイをロールバックし、Sentry のトレースから原因を特定する。
+- 新しいテーブルを追加した場合は、`supabase/migrations/*` に RLS とインデックスを必ず含める。
+
 
 ---
 

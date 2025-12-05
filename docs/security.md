@@ -121,13 +121,42 @@ DocuFlow のセキュリティ方針と実装の要点をまとめます。
 | T3 | OpenAI API の不正利用 | API キー流出・濫用 | サーバーサイドのみ保持・レート制限 |
 | T4 | 権限昇格 | member が owner 操作を行う | RLS + ロールチェック（owner/admin/member） |
 | T5 | 認証情報の盗難 | Cookie の奪取 | Secure / HttpOnly / SameSite 設定の強化（今後） |
+| T6 | 組織外からの不正ログイン | パスワードリスト攻撃 / なりすまし | 2FA / SSO / IP 制限の導入（設計済み） |
 
 ---
 
-## 7. 今後の発展
+## 7. SSO / 2FA 設計（将来導入）
+
+### 7.1 2段階認証 (2FA)
+
+- 手段: TOTP アプリ（Google Authenticator / 1Password など）
+- 想定フロー:
+  1. `/settings/security` から 2FA を有効化
+  2. QR コード（`otpauth://` URI）をスキャン
+  3. 初回ワンタイムコードで検証
+  4. 以降はログイン時にパスワード + TOTP を要求
+
+バックエンドでは、ユーザーごとに `two_factor_secret` / `two_factor_enabled` を保持する構成を想定。
+
+### 7.2 SSO (Single Sign-On)
+
+- IdP 候補: Google Workspace, Microsoft Entra ID
+- 想定フロー:
+  1. 組織 owner が `/settings/security` で SSO 設定を開始
+  2. IdP 側で OAuth / OIDC クライアントを作成し、クライアントID / シークレットを登録
+  3. ログイン画面で「Google Workspace でログイン」ボタンを表示
+  4. コールバック時にメールドメインや group claim を元に `organization_members` と紐付け
+
+### 7.3 設計レベルでの位置づけ
+
+- 現時点ではポートフォリオ用途のため、SSO / 2FA は **UI と設計まで** を実装範囲とする。
+- 詳細な方針は `docs/adr/0004-auth-hardening-and-sso-2fa.md` に記録。
+
+---
+
+## 8. 今後の発展
 
 - Supabase Realtime + 監査ログテーブルで**変更履歴の完全追跡**（誰が・いつ・何を変更したか）。
 - 組織ごとの **IP allow list** / SSO（Google Workspace など）統合。
 - セキュリティテスト（OWASP ASVS をベースにしたセルフチェックリスト）の導入。
-
 

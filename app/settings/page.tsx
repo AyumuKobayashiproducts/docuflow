@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { DeleteAccountSection } from "../app/DeleteAccountSection";
 import { deleteAccount } from "../app/accountActions";
@@ -16,12 +17,39 @@ export default function SettingsPage() {
 
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-2 text-sm font-semibold text-slate-900">
-            アカウント
+          <h2 className="mb-3 text-sm font-semibold text-slate-900">
+            設定メニュー
           </h2>
-          <p className="text-xs text-slate-600">
-            現在はアカウント削除のみをサポートしています。今後、通知設定やテーマ設定などをここに追加していく想定です。
-          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Link
+              href="/settings/organizations"
+              className="group rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 transition hover:border-slate-300 hover:bg-white"
+            >
+              <p className="font-semibold text-slate-900">組織・チーム</p>
+              <p className="mt-1 text-[11px] text-slate-600">
+                組織の作成・メンバー招待・ロール（owner / admin / member）の管理。
+              </p>
+            </Link>
+            <Link
+              href="/settings/billing"
+              className="group rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 transition hover:border-slate-300 hover:bg-white"
+            >
+              <p className="font-semibold text-slate-900">課金・プラン</p>
+              <p className="mt-1 text-[11px] text-slate-600">
+                Free / Pro / Team プランや、将来の Stripe 連携を前提とした課金設定。
+              </p>
+            </Link>
+            <Link
+              href="/settings/security"
+              className="group rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 transition hover:border-slate-300 hover:bg-white"
+            >
+              <p className="font-semibold text-slate-900">セキュリティ</p>
+              <p className="mt-1 text-[11px] text-slate-600">
+                認証・2段階認証・SSO などのセキュリティ設定（設計済み / 一部 Coming
+                Soon）。
+              </p>
+            </Link>
+          </div>
         </section>
 
         <DeleteAccountSection deleteAccount={deleteAccount} />

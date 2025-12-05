@@ -245,6 +245,8 @@ PDF・Word ファイルをドラッグ＆ドロップ。`pdf-parse` / `mammoth` 
 | **E2E Test Pass Rate** | 100% | Playwright |
 | **TypeScript Strict Mode** | ✅ Enabled | tsc |
 | **ESLint Errors** | 0 | ESLint |
+| **SLO: /app p95 レイテンシ** | < 500ms（目標） | Vercel Analytics / ブラウザ計測 |
+| **Supabase Migrations CI** | ✅ Always Green | GitHub Actions |
 
 ### CI/CD Pipeline
 
