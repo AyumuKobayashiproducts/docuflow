@@ -14,6 +14,11 @@ import { DocumentCardShortcuts } from "./DocumentCardShortcuts";
 import { BulkDeleteConfirmButton } from "./BulkDeleteConfirmButton";
 import { DragAndDropUpload } from "./DragAndDropUpload";
 import { filterDocuments } from "@/lib/filterDocuments";
+import {
+  updateDocumentEmbedding,
+  searchSimilarDocuments,
+  SimilarDocument,
+} from "@/lib/similarSearch";
 
 // UTC の ISO 文字列を、日本時間 (UTC+9) の "YYYY/MM/DD HH:MM" に変換するヘルパー
 function formatJstDateTime(value: string | null): string | null {
@@ -340,6 +345,9 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
         documentId: String(created.id),
         documentTitle: title,
       });
+
+      // 埋め込みベクトルを生成・保存
+      updateDocumentEmbedding(String(created.id), content).catch(console.error);
     }
   }
 
@@ -491,6 +499,16 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
         .filter((c): c is string => !!c && c.length > 0)
     )
   ).length;
+
+  // 類似検索（検索クエリがある場合のみ実行）
+  let similarDocuments: SimilarDocument[] = [];
+  if (query && query.length >= 2) {
+    try {
+      similarDocuments = await searchSimilarDocuments(query, userId, 0.5, 5);
+    } catch (error) {
+      console.error("Similar search error:", error);
+    }
+  }
 
   // カテゴリ別件数のトップ3を集計（ミニグラフ風カード用）
   const categoryStats: [string, number][] = (() => {
@@ -912,6 +930,69 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             </Link>
           </div>
         </section>
+
+        {/* 🔍 AI類似検索結果（検索クエリがあり、結果がある場合のみ表示） */}
+        {query && similarDocuments.length > 0 && (
+          <section className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50/50 to-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 text-sm text-white">
+                🧠
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  AI類似検索結果
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  「{query}」に意味的に近いドキュメント（ベクトル検索）
+                </p>
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {similarDocuments.map((doc) => (
+                <li
+                  key={doc.id}
+                  className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3 transition hover:border-violet-300 hover:shadow-sm"
+                >
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      href={`/documents/${doc.id}`}
+                      className="block truncate text-sm font-medium text-slate-900 hover:text-violet-600 hover:underline"
+                    >
+                      {doc.title}
+                    </Link>
+                    {doc.summary && (
+                      <p className="mt-1 line-clamp-1 text-xs text-slate-500">
+                        {doc.summary}
+                      </p>
+                    )}
+                    {doc.tags && doc.tags.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {doc.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-3 flex flex-col items-end gap-1">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                      類似度 {Math.round(doc.similarity * 100)}%
+                    </span>
+                    {doc.category && (
+                      <span className="text-[10px] text-slate-400">
+                        {doc.category}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="space-y-3">
           <div className="flex items-center justify-between">

@@ -157,3 +157,24 @@ ${rawContent}
 
   return category || "未分類";
 }
+
+/**
+ * テキストを OpenAI Embeddings API で埋め込みベクトルに変換する
+ * @param text 埋め込みを生成するテキスト
+ * @returns 1536次元の埋め込みベクトル
+ */
+export async function generateEmbedding(text: string): Promise<number[]> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("Missing OPENAI_API_KEY environment variable.");
+  }
+
+  // テキストが長すぎる場合は先頭8000文字に切り詰める（トークン制限対策）
+  const truncatedText = text.slice(0, 8000);
+
+  const response = await openai.embeddings.create({
+    model: "text-embedding-3-small",
+    input: truncatedText,
+  });
+
+  return response.data[0].embedding;
+}

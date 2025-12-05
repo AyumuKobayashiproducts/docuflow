@@ -5,19 +5,30 @@ import {
   generateSummaryAndTags,
   generateTitleFromContent,
   generateCategoryFromContent,
+  generateEmbedding,
 } from "../lib/ai";
 
 // OpenAI クライアントをモックする
 vi.mock("openai", () => {
   type Choice = { message?: { content?: string | null } | null };
   type MockResponse = { choices?: Choice[] };
+  type EmbeddingResponse = { data: { embedding: number[] }[] };
 
   const queue: MockResponse[] = [];
+  const embeddingQueue: EmbeddingResponse[] = [];
 
   const create = vi.fn(() => {
     const next = queue.shift();
     if (!next) {
       return Promise.resolve({ choices: [] });
+    }
+    return Promise.resolve(next);
+  });
+
+  const embeddingsCreate = vi.fn(() => {
+    const next = embeddingQueue.shift();
+    if (!next) {
+      return Promise.resolve({ data: [{ embedding: Array(1536).fill(0.1) }] });
     }
     return Promise.resolve(next);
   });
@@ -28,15 +39,29 @@ vi.mock("openai", () => {
     },
   };
 
+  const embeddings = {
+    create: embeddingsCreate,
+  };
+
   const OpenAI = vi.fn(() => ({
     chat,
+    embeddings,
   }));
 
   function enqueueResponse(response: MockResponse) {
     queue.push(response);
   }
 
-  return { default: OpenAI, __esModule: true, enqueueResponse };
+  function enqueueEmbeddingResponse(response: EmbeddingResponse) {
+    embeddingQueue.push(response);
+  }
+
+  return {
+    default: OpenAI,
+    __esModule: true,
+    enqueueResponse,
+    enqueueEmbeddingResponse,
+  };
 });
 
 // モックにレスポンスを積むヘルパー
@@ -180,6 +205,33 @@ describe("lib/ai", () => {
 
       const category = await generateCategoryFromContent("本文テキスト");
       expect(category).toBe("未分類");
+    });
+  });
+
+  describe("generateEmbedding", () => {
+    it("テキストから1536次元の埋め込みベクトルを返す", async () => {
+      const embedding = await generateEmbedding("テスト本文テキスト");
+
+      expect(Array.isArray(embedding)).toBe(true);
+      expect(embedding.length).toBe(1536);
+      expect(typeof embedding[0]).toBe("number");
+    });
+
+    it("長いテキストは8000文字で切り詰められる", async () => {
+      // 10000文字のテキストを生成
+      const longText = "あ".repeat(10000);
+      const embedding = await generateEmbedding(longText);
+
+      // 埋め込みが正常に生成されることを確認
+      expect(Array.isArray(embedding)).toBe(true);
+      expect(embedding.length).toBe(1536);
+    });
+
+    it("空文字でも動作する", async () => {
+      const embedding = await generateEmbedding("");
+
+      expect(Array.isArray(embedding)).toBe(true);
+      expect(embedding.length).toBe(1536);
     });
   });
 });

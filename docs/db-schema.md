@@ -23,6 +23,7 @@
 | `is_archived`      | boolean     | ✔︎    | アーカイブフラグ。論理削除用途。デフォルト `false`。             |
 | `share_token`      | text        | ✖︎    | 共有リンク用トークン。null のとき共有無効。                      |
 | `share_expires_at` | timestamptz | ✖︎    | 共有リンクの有効期限（現状未使用）。                             |
+| `embedding`        | vector(1536)| ✖︎    | OpenAI text-embedding-3-small による埋め込みベクトル。類似検索用。|
 | `created_at`       | timestamptz | ✔︎    | 作成日時。デフォルト `now()`。                                   |
 
 ---
@@ -95,6 +96,12 @@ create index if not exists document_versions_document_id_created_at_idx
 -- document_comments: ドキュメントごとのコメント参照用
 create index if not exists document_comments_document_id_created_at_idx
   on public.document_comments (document_id, created_at asc);
+
+-- documents: ベクトル類似検索用（IVFFlat インデックス）
+create index if not exists documents_embedding_idx
+  on public.documents
+  using ivfflat (embedding vector_cosine_ops)
+  with (lists = 100);
 ```
 
 ---
@@ -107,3 +114,68 @@ RLS を本番で有効化する場合、以下の方針で運用する:
 - `documents` の `share_token is not null` な行だけは、`/share/[token]` からの閲覧に限り公開。
 
 詳細な SQL は README の「RLS / マルチテナント設計（Supabase）」セクションを参照。
+
+---
+
+### 7. ベクトル検索（pgvector）
+
+**用途**: ドキュメントの意味的な類似検索を実現する。
+
+#### 7.1. pgvector 拡張の有効化
+
+```sql
+-- Supabase で pgvector を有効化
+create extension if not exists vector with schema public;
+```
+
+#### 7.2. 類似検索用 RPC 関数
+
+```sql
+create or replace function match_documents(
+  query_embedding vector(1536),
+  match_threshold float default 0.7,
+  match_count int default 5,
+  filter_user_id uuid default null
+)
+returns table (
+  id uuid,
+  title text,
+  category text,
+  summary text,
+  tags text[],
+  similarity float
+)
+language plpgsql
+as $$
+begin
+  return query
+  select
+    d.id,
+    d.title,
+    d.category,
+    d.summary,
+    d.tags,
+    1 - (d.embedding <=> query_embedding) as similarity
+  from public.documents d
+  where
+    d.embedding is not null
+    and d.is_archived = false
+    and (filter_user_id is null or d.user_id = filter_user_id)
+    and 1 - (d.embedding <=> query_embedding) > match_threshold
+  order by d.embedding <=> query_embedding
+  limit match_count;
+end;
+$$;
+```
+
+#### 7.3. 使用例
+
+```sql
+-- 類似ドキュメントを検索
+select * from match_documents(
+  '[0.1, 0.2, ...]'::vector,  -- クエリの埋め込みベクトル（1536次元）
+  0.7,                         -- 類似度の閾値
+  5,                           -- 返す件数
+  'user-uuid-here'             -- ユーザーID（オプション）
+);
+```
