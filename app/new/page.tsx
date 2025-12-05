@@ -9,6 +9,7 @@ import {
 } from "@/lib/ai";
 import { logActivity } from "@/lib/activityLog";
 import { updateDocumentEmbedding } from "@/lib/similarSearch";
+import { getActiveOrganizationId } from "@/lib/organizations";
 import { Logo } from "@/components/Logo";
 import { NewSubmitButtons } from "@/components/NewSubmitButtons";
 import { NewFileDropZone } from "@/components/NewFileDropZone";
@@ -43,6 +44,7 @@ async function fastCreateDocument(formData: FormData) {
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
 
   let title = String(formData.get("title") ?? "").trim();
   let category = String(formData.get("category") ?? "").trim();
@@ -80,6 +82,7 @@ async function fastCreateDocument(formData: FormData) {
     .from("documents")
     .insert({
       user_id: userId,
+      organization_id: activeOrgId,
       title,
       category,
       raw_content: content,
@@ -114,6 +117,7 @@ async function createDocument(formData: FormData) {
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
 
   let title = String(formData.get("title") ?? "").trim();
   let category = String(formData.get("category") ?? "").trim();
@@ -177,6 +181,7 @@ async function createDocument(formData: FormData) {
     .from("documents")
     .insert({
       user_id: userId,
+      organization_id: activeOrgId,
       title,
       category: category || "未分類",
       raw_content: content,

@@ -9,22 +9,23 @@
 
 **用途**: ユーザーが作成したドキュメント本体を保持する。
 
-| カラム名           | 型          | 必須 | 説明                                                             |
-| ------------------ | ----------- | ---- | ---------------------------------------------------------------- |
-| `id`               | uuid (PK)   | ✔︎    | ドキュメント ID。`gen_random_uuid()` などで生成。                |
-| `user_id`          | uuid        | ✔︎    | 所有ユーザーの Supabase Auth user ID。                           |
-| `title`            | text        | ✔︎    | ドキュメントタイトル。空の場合は AI で自動生成。                 |
-| `category`         | text        | ✖︎    | カテゴリ（例: 仕様書 / 議事録 / 企画書）。未指定時は「未分類」。 |
-| `raw_content`      | text        | ✔︎    | 本文（テキスト / 抽出テキスト）。                                |
-| `summary`          | text        | ✖︎    | AI による要約。                                                  |
-| `tags`             | text[]      | ✖︎    | AI によるタグ配列（最大 3 件を想定）。                           |
-| `is_favorite`      | boolean     | ✔︎    | お気に入りフラグ。デフォルト `false`。                           |
-| `is_pinned`        | boolean     | ✔︎    | ピン留めフラグ。デフォルト `false`。                             |
-| `is_archived`      | boolean     | ✔︎    | アーカイブフラグ。論理削除用途。デフォルト `false`。             |
-| `share_token`      | text        | ✖︎    | 共有リンク用トークン。null のとき共有無効。                      |
-| `share_expires_at` | timestamptz | ✖︎    | 共有リンクの有効期限（現状未使用）。                             |
-| `embedding`        | vector(1536)| ✖︎    | OpenAI text-embedding-3-small による埋め込みベクトル。類似検索用。|
-| `created_at`       | timestamptz | ✔︎    | 作成日時。デフォルト `now()`。                                   |
+| カラム名           | 型           | 必須 | 説明                                                                                  |
+| ------------------ | ------------ | ---- | ------------------------------------------------------------------------------------- |
+| `id`               | uuid (PK)    | ✔︎    | ドキュメント ID。`gen_random_uuid()` などで生成。                                     |
+| `user_id`          | uuid         | ✔︎    | 所有ユーザーの Supabase Auth user ID。                                                |
+| `organization_id`  | uuid         | ✖︎    | 所属組織の ID。null の場合は「個人ドキュメント」として扱う。                          |
+| `title`            | text         | ✔︎    | ドキュメントタイトル。空の場合は AI で自動生成。                                      |
+| `category`         | text         | ✖︎    | カテゴリ（例: 仕様書 / 議事録 / 企画書）。未指定時は「未分類」。                      |
+| `raw_content`      | text         | ✔︎    | 本文（テキスト / 抽出テキスト）。                                                     |
+| `summary`          | text         | ✖︎    | AI による要約。                                                                       |
+| `tags`             | text[]       | ✖︎    | AI によるタグ配列（最大 3 件を想定）。                                                |
+| `is_favorite`      | boolean      | ✔︎    | お気に入りフラグ。デフォルト `false`。                                                |
+| `is_pinned`        | boolean      | ✔︎    | ピン留めフラグ。デフォルト `false`。                                                  |
+| `is_archived`      | boolean      | ✔︎    | アーカイブフラグ。論理削除用途。デフォルト `false`。                                  |
+| `share_token`      | text         | ✖︎    | 共有リンク用トークン。null のとき共有無効。                                           |
+| `share_expires_at` | timestamptz  | ✖︎    | 共有リンクの有効期限（現状未使用）。                                                  |
+| `embedding`        | vector(1536) | ✖︎    | OpenAI text-embedding-3-small による埋め込みベクトル。類似検索用。                     |
+| `created_at`       | timestamptz  | ✔︎    | 作成日時。デフォルト `now()`。                                                        |
 
 ---
 
@@ -54,6 +55,7 @@
 | ---------------- | ----------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`             | uuid (PK)   | ✔︎    | アクティビティ ID。                                                                                                                                                  |
 | `user_id`        | uuid        | ✔︎    | 操作ユーザー ID。                                                                                                                                                    |
+| `organization_id`| uuid        | ✖︎    | 対象ドキュメントが属する組織 ID。個人ドキュメントの場合は null。                                                                                                    |
 | `document_id`    | uuid        | ✖︎    | 対象ドキュメント ID（アカウント削除などでは null）。                                                                                                                 |
 | `document_title` | text        | ✖︎    | 対象ドキュメントのタイトル（ログ時点のコピー）。                                                                                                                     |
 | `action`         | text        | ✔︎    | アクション種別。例: `create_document`, `update_document`, `delete_document`, `toggle_favorite`, `toggle_pinned`, `enable_share`, `disable_share`, `add_comment` 等。 |
@@ -66,13 +68,14 @@
 
 **用途**: 各ドキュメントに紐づくコメント（メモ / TODO など）を保存する。
 
-| カラム名      | 型          | 必須 | 説明                                                  |
-| ------------- | ----------- | ---- | ----------------------------------------------------- |
-| `id`          | uuid (PK)   | ✔︎    | コメント ID。                                         |
-| `document_id` | uuid        | ✔︎    | 対象ドキュメントの `documents.id`。                   |
-| `user_id`     | uuid        | ✖︎    | コメント投稿者の ID。匿名利用も許容するなら null 可。 |
-| `content`     | text        | ✔︎    | コメント本文。                                        |
-| `created_at`  | timestamptz | ✔︎    | コメント作成日時。デフォルト `now()`。                |
+| カラム名        | 型          | 必須 | 説明                                                  |
+| --------------- | ----------- | ---- | ----------------------------------------------------- |
+| `id`            | uuid (PK)   | ✔︎    | コメント ID。                                         |
+| `document_id`   | uuid        | ✔︎    | 対象ドキュメントの `documents.id`。                   |
+| `user_id`       | uuid        | ✖︎    | コメント投稿者の ID。匿名利用も許容するなら null 可。 |
+| `organization_id`| uuid       | ✖︎    | コメント対象ドキュメントが属する組織 ID。             |
+| `content`       | text        | ✔︎    | コメント本文。                                        |
+| `created_at`    | timestamptz | ✔︎    | コメント作成日時。デフォルト `now()`。                |
 
 ---
 
@@ -110,10 +113,15 @@ create index if not exists documents_embedding_idx
 
 RLS を本番で有効化する場合、以下の方針で運用する:
 
-- `documents` / `document_versions` / `activity_logs` はすべて `user_id = auth.uid()` の行のみ参照・更新可能。
+- `documents` / `document_versions` / `activity_logs` / `document_comments` は  
+  - `user_id = auth.uid()` の行、または  
+  - `organization_members` 経由で所属している `organization_id` を持つ行  
+  のみ参照・更新可能。
 - `documents` の `share_token is not null` な行だけは、`/share/[token]` からの閲覧に限り公開。
+- `organizations` / `organization_members` / `organization_invitations` は、所属メンバーのみ参照可能で、管理操作はオーナー（`owner_id`）に限定。
 
-詳細な SQL は README の「RLS / マルチテナント設計（Supabase）」セクションを参照。
+詳細な SQL は `supabase/migrations/20241205_enable_rls.sql` および  
+`supabase/migrations/20241206_add_organizations.sql` を参照。
 
 ---
 

@@ -11,6 +11,8 @@
 <br />
 
 [![CI](https://img.shields.io/github/actions/workflow/status/hashimotonobuaki123-cmyk/docuflow/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI)](https://github.com/hashimotonobuaki123-cmyk/docuflow/actions)
+[![Lighthouse](https://img.shields.io/github/actions/workflow/status/hashimotonobuaki123-cmyk/docuflow/lighthouse.yml?branch=main&style=for-the-badge&logo=lighthouse&logoColor=white&label=Lighthouse)](https://github.com/hashimotonobuaki123-cmyk/docuflow/actions/workflows/lighthouse.yml)
+[![Playwright](https://img.shields.io/badge/Playwright-E2E_Tests-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](https://playwright.dev/)
 [![codecov](https://img.shields.io/codecov/c/github/hashimotonobuaki123-cmyk/docuflow?style=for-the-badge&logo=codecov&logoColor=white)](https://codecov.io/gh/hashimotonobuaki123-cmyk/docuflow)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -226,6 +228,29 @@ PDF・Word ファイルをドラッグ＆ドロップ。`pdf-parse` / `mammoth` 
 [![Prettier](https://img.shields.io/badge/Prettier-F7B93E?style=for-the-badge&logo=prettier&logoColor=black)](https://prettier.io/)
 
 </div>
+
+<br />
+
+## 🎯 Quality Gates
+
+本プロジェクトでは以下の品質ゲートを設定し、継続的に監視しています。
+
+| Metric | Target | Tool |
+|:-------|:-------|:-----|
+| **Lighthouse Performance** | 80+ | Lighthouse CI |
+| **Lighthouse Accessibility** | 80+ | Lighthouse CI |
+| **Lighthouse Best Practices** | 80+ | Lighthouse CI |
+| **Lighthouse SEO** | 80+ | Lighthouse CI |
+| **Unit Test Coverage** | 60%+ | Vitest + Codecov |
+| **E2E Test Pass Rate** | 100% | Playwright |
+| **TypeScript Strict Mode** | ✅ Enabled | tsc |
+| **ESLint Errors** | 0 | ESLint |
+
+### CI/CD Pipeline
+
+```
+Push → Lint → Type Check → Unit Test → Build → E2E Test → Lighthouse → Deploy
+```
 
 <br />
 

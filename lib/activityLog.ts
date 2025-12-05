@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabaseClient";
+import { getActiveOrganizationId } from "@/lib/organizations";
 
 type ActivityAction =
   | "create_document"
@@ -17,6 +18,7 @@ type ActivityPayload = {
   documentId?: string;
   documentTitle?: string | null;
   details?: string;
+  organizationId?: string | null;
 };
 
 export async function logActivity(
@@ -28,10 +30,16 @@ export async function logActivity(
 
   if (!userId) return;
 
-  const { documentId, documentTitle, details } = payload;
+  const { documentId, documentTitle, details, organizationId } = payload;
+  
+  // organization_idが明示的に渡されていなければ、アクティブな組織から取得
+  const orgId = organizationId !== undefined 
+    ? organizationId 
+    : await getActiveOrganizationId(userId);
 
   await supabase.from("activity_logs").insert({
     user_id: userId,
+    organization_id: orgId,
     action,
     document_id: documentId ?? null,
     document_title: documentTitle ?? null,

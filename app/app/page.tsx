@@ -19,6 +19,12 @@ import {
   searchSimilarDocuments,
   SimilarDocument,
 } from "@/lib/similarSearch";
+import { OrganizationSwitcher } from "@/components/OrganizationSwitcher";
+import {
+  getUserOrganizations,
+  getActiveOrganizationId,
+  setActiveOrganization,
+} from "@/lib/organizations";
 
 // UTC の ISO 文字列を、日本時間 (UTC+9) の "YYYY/MM/DD HH:MM" に変換するヘルパー
 function formatJstDateTime(value: string | null): string | null {
@@ -263,6 +269,7 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
 
   // 複数ファイル対応: "files" に複数入っていればそれを優先し、なければ従来の "file" 1件のみ扱う
   const filesFromForm = formData.getAll("files").filter(
@@ -324,6 +331,7 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
       .from("documents")
       .insert({
         user_id: userId,
+        organization_id: activeOrgId,
         title,
         category,
         raw_content: content,
@@ -359,6 +367,17 @@ export async function deleteAccount() {
   console.warn(
     "[deleteAccount] この関数は app/app/accountActions.ts に移動しました。新しい設定ページから使用してください。"
   );
+}
+
+// 組織切り替えアクション
+async function switchOrganization(formData: FormData) {
+  "use server";
+
+  const organizationId = String(formData.get("organizationId") ?? "").trim();
+  if (!organizationId) return;
+
+  await setActiveOrganization(organizationId);
+  revalidatePath("/app");
 }
 
 type DashboardProps = {
@@ -409,6 +428,14 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
 
+  // 組織情報を取得
+  const memberships = userId ? await getUserOrganizations(userId) : [];
+  const organizations = memberships.map((m) => ({
+    organization: m.organization,
+    role: m.role,
+  }));
+  const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
+
   let documentsQuery = supabase
     .from("documents")
     .select("*")
@@ -416,6 +443,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
 
   if (userId) {
     documentsQuery = documentsQuery.eq("user_id", userId);
+  }
+
+  // アクティブな組織でフィルタ（組織がある場合）
+  if (activeOrgId) {
+    documentsQuery = documentsQuery.eq("organization_id", activeOrgId);
   }
 
   documentsQuery = documentsQuery.eq("is_archived", showArchived);
@@ -623,9 +655,17 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
         <DocumentCardShortcuts />
         <header className="border-b border-slate-200 bg-white">
           <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-            <h1 className="text-sm font-semibold text-slate-900">
-              ドキュメントワークスペース
-            </h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-sm font-semibold text-slate-900">
+                ドキュメントワークスペース
+              </h1>
+              {/* 組織スイッチャー */}
+              <OrganizationSwitcher
+                organizations={organizations}
+                activeOrganizationId={activeOrgId}
+                switchAction={switchOrganization}
+              />
+            </div>
             <div className="flex items-center gap-3">
               <span className="text-[11px] text-slate-500">
                 合計 {totalCount} 件・ピン {pinnedCount} 件・お気に入り{" "}
