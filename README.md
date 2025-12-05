@@ -377,6 +377,14 @@ npm run dev
 
 ### Environment Variables
 
+`.env.example` を `.env.local` にコピーしてから、必要な値を埋める想定です。
+
+```bash
+cp .env.example .env.local
+```
+
+代表的な環境変数:
+
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -388,6 +396,8 @@ OPENAI_API_KEY=your-openai-api-key
 # Optional: Account deletion
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
+
+より詳しいセットアップ手順は `docs/dev-setup.md` を参照してください。
 
 <br />
 

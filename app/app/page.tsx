@@ -25,6 +25,14 @@ import {
   getActiveOrganizationId,
   setActiveOrganization,
 } from "@/lib/organizations";
+import { NotificationBell } from "@/components/NotificationBell";
+import {
+  getUserNotifications,
+  getUnreadNotificationCount,
+  markNotificationRead,
+  markAllNotificationsRead,
+  Notification,
+} from "@/lib/notifications";
 
 // UTC の ISO 文字列を、日本時間 (UTC+9) の "YYYY/MM/DD HH:MM" に変換するヘルパー
 function formatJstDateTime(value: string | null): string | null {
@@ -380,6 +388,29 @@ async function switchOrganization(formData: FormData) {
   revalidatePath("/app");
 }
 
+// 通知を既読にするアクション
+async function markNotificationReadAction(formData: FormData) {
+  "use server";
+
+  const notificationId = String(formData.get("notificationId") ?? "").trim();
+  if (!notificationId) return;
+
+  await markNotificationRead(notificationId);
+  revalidatePath("/app");
+}
+
+// すべての通知を既読にするアクション
+async function markAllNotificationsReadAction() {
+  "use server";
+
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  if (!userId) return;
+
+  await markAllNotificationsRead(userId);
+  revalidatePath("/app");
+}
+
 type DashboardProps = {
   searchParams: Promise<{
     q?: string;
@@ -435,6 +466,14 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     role: m.role,
   }));
   const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
+
+  // 通知情報を取得
+  let notifications: Notification[] = [];
+  let unreadCount = 0;
+  if (userId) {
+    notifications = await getUserNotifications(userId, 10, false);
+    unreadCount = await getUnreadNotificationCount(userId);
+  }
 
   let documentsQuery = supabase
     .from("documents")
@@ -671,6 +710,14 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                 合計 {totalCount} 件・ピン {pinnedCount} 件・お気に入り{" "}
                 {favoriteCount} 件
               </span>
+              {userId && (
+                <NotificationBell
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  markReadAction={markNotificationReadAction}
+                  markAllReadAction={markAllNotificationsReadAction}
+                />
+              )}
               <UserMenu />
             </div>
           </div>

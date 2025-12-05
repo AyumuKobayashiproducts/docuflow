@@ -82,6 +82,30 @@
 3. `/share/[token]` にアクセスすると、`share_token` で `documents` 行を検索し、閲覧用ページを表示
 4. 「共有を停止」で `share_token` を `null` に更新し、`activity_logs` に `disable_share` を残す
 
+#### 4.4 ベクトル検索（pgvector）
+
+1. ドキュメント作成・更新時に OpenAI `text-embedding-3-small` で埋め込みベクトルを生成
+2. `documents.embedding` カラムに保存（`vector(1536)` 型）
+3. 検索クエリ入力時にクエリも埋め込み化し、Supabase の RPC 関数 `match_documents` を呼び出し
+4. pgvector がコサイン類似度 (`<=>`) で類似度スコアを計算し、上位 N 件を返す
+5. `/app` の「AI類似検索結果」セクションとして UI に表示
+
+#### 4.5 組織・RBAC
+
+1. ユーザーは `/settings/organizations` で組織を作成（自動的に `owner` ロール）
+2. `organization_members` にメンバーが `owner` / `admin` / `member` として追加される
+3. `documents.organization_id` により、ドキュメントが「個人」か「組織」かを判別
+4. ダッシュボードのヘッダーにある Organization スイッチャーでアクティブ組織を切り替え
+5. RLS が `organization_id` とロールに基づいてアクセス可能範囲を制御
+
+#### 4.6 通知・メンション
+
+1. ドキュメントにコメントが追加されると `document_comments` に行を挿入
+2. コメント本文から `@メール` / `@名前` をパースし、該当ユーザーIDを `mentioned_user_ids` に保存
+3. `notifications` テーブルに `comment_added` / `comment_mention` 通知を作成
+4. ヘッダーの 🔔 (`NotificationBell`) が未読数を表示し、ドロップダウンで最近の通知を一覧表示
+5. 「すべて既読にする」操作で `read_at` がまとめて更新される
+
 ### 5. エラーハンドリング・ロギング
 
 - Supabase / OpenAI 呼び出しでエラーが発生した場合、`console.error` でサーバーログに出力。
@@ -104,3 +128,6 @@
 - `@supabase/auth-helpers-nextjs` を導入し、RLS を本番環境でも有効化可能な構成に移行する。
 - OpenAI 呼び出し結果をキャッシュするレイヤー（例: Supabase の別テーブル）を設け、再要約のコストを削減する。
 - Server Actions をユースケース単位のサービス関数に薄く委譲し、テストしやすい構造に分解する。
+- 通知を WebSocket / Supabase Realtime でリアルタイムに配信し、ポーリングを削減する。
+- 組織ごとのリソース制限（AI 呼び出し回数 / ストレージ容量）を導入し、マルチテナント運用に備える。
+
