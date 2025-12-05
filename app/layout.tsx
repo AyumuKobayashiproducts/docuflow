@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import dynamic from "next/dynamic";
 import "./globals.css";
-import { CommandPalette } from "@/components/CommandPalette";
-import { KeyboardShortcutsHelp } from "@/components/KeyboardShortcutsHelp";
 import { ToastProvider } from "@/components/Toast";
-import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
-import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+
+// 遅延読み込みでパフォーマンス改善
+const CommandPalette = dynamic(() => import("@/components/CommandPalette").then(mod => mod.CommandPalette), { ssr: false });
+const KeyboardShortcutsHelp = dynamic(() => import("@/components/KeyboardShortcutsHelp").then(mod => mod.KeyboardShortcutsHelp), { ssr: false });
+const ServiceWorkerRegistration = dynamic(() => import("@/components/ServiceWorkerRegistration").then(mod => mod.ServiceWorkerRegistration), { ssr: false });
+const PWAInstallPrompt = dynamic(() => import("@/components/PWAInstallPrompt").then(mod => mod.PWAInstallPrompt), { ssr: false });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

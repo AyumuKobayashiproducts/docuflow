@@ -8,13 +8,25 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     // リモート画像のドメイン（必要に応じて追加）
     remotePatterns: [],
+    // 画像最適化のデバイスサイズ
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+  },
+
+  // コンパイラ最適化
+  compiler: {
+    // 本番ビルドでconsole.logを削除
+    removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },
 
   // 実験的機能
   experimental: {
     // ビルドサイズの最適化
-    optimizePackageImports: ["@supabase/supabase-js"],
+    optimizePackageImports: ["@supabase/supabase-js", "openai"],
   },
+
+  // 本番ビルドの最適化
+  productionBrowserSourceMaps: false,
 
   // ヘッダー設定
   async headers() {
@@ -56,6 +68,26 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/:path*.svg",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        // JavaScript / CSS のキャッシュ
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        // フォントのキャッシュ
+        source: "/:path*.woff2",
         headers: [
           {
             key: "Cache-Control",
