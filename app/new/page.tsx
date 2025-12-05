@@ -8,6 +8,7 @@ import {
   generateCategoryFromContent,
 } from "@/lib/ai";
 import { logActivity } from "@/lib/activityLog";
+import { updateDocumentEmbedding } from "@/lib/similarSearch";
 import { Logo } from "@/components/Logo";
 import { NewSubmitButtons } from "@/components/NewSubmitButtons";
 import { NewFileDropZone } from "@/components/NewFileDropZone";
@@ -100,6 +101,9 @@ async function fastCreateDocument(formData: FormData) {
       documentId: String(created.id),
       documentTitle: title,
     });
+
+    // バックグラウンドで埋め込みベクトルを生成・保存（高速保存なのでawaitしない）
+    updateDocumentEmbedding(String(created.id), content).catch(console.error);
   }
 
   redirect("/");
@@ -194,6 +198,9 @@ async function createDocument(formData: FormData) {
       documentId: String(created.id),
       documentTitle: title,
     });
+
+    // 埋め込みベクトルを生成・保存（AI処理と並行して実行）
+    updateDocumentEmbedding(String(created.id), content).catch(console.error);
   }
 
   redirect("/");
