@@ -1,6 +1,8 @@
+import type { ElementType, ReactNode } from "react";
+
 type VisuallyHiddenProps = {
-  children: React.ReactNode;
-  as?: keyof JSX.IntrinsicElements;
+  children: ReactNode;
+  as?: ElementType;
 };
 
 /**
