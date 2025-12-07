@@ -27,7 +27,7 @@ export default async function Home() {
         <header className="glass border-b border-slate-200/50 sticky top-0 z-50">
           <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
             <Logo size="md" />
-            <nav className="flex items-center gap-3">
+            <nav className="flex items-center gap-4">
               <Link
                 href="/auth/login"
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
@@ -39,6 +39,14 @@ export default async function Home() {
                 className="btn btn-primary"
               >
                 無料で始める
+              </Link>
+              {/* Language switch to English landing */}
+              <Link
+                href="/en"
+                className="text-[11px] font-medium text-slate-400 hover:text-slate-700 transition-colors border border-slate-200 rounded-full px-2 py-0.5"
+                aria-label="Switch to English landing page"
+              >
+                EN
               </Link>
             </nav>
           </div>
