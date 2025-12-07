@@ -35,6 +35,7 @@ import {
   markAllNotificationsRead,
   Notification,
 } from "@/lib/notifications";
+import { t, getLocaleFromParam, Locale } from "@/lib/i18n";
 
 // UTC の ISO 文字列を、日本時間 (UTC+9) の "YYYY/MM/DD HH:MM" に変換するヘルパー
 function formatJstDateTime(value: string | null): string | null {
@@ -421,6 +422,7 @@ type DashboardProps = {
     onlyFavorites?: string;
     onlyPinned?: string;
     archived?: string;
+    lang?: string;
   }>;
 };
 
@@ -457,6 +459,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
   const onlyFavorites = params?.onlyFavorites === "1";
   const onlyPinned = params?.onlyPinned === "1";
   const showArchived = params?.archived === "1";
+  const locale: Locale = getLocaleFromParam(params?.lang);
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
@@ -661,16 +664,16 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
         </div>
         <nav className="mt-4 flex flex-1 flex-col gap-1 px-2 text-sm text-slate-700">
           <Link
-            href="/app"
+            href={locale === "en" ? "/app?lang=en" : "/app"}
             className="flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 font-medium text-white"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-[13px]">
               📄
             </span>
-            <span>ドキュメント</span>
+            <span>{locale === "en" ? "Documents" : "ドキュメント"}</span>
           </Link>
           <Link
-            href="/app?archived=1"
+            href={locale === "en" ? "/app?archived=1&lang=en" : "/app?archived=1"}
             className={`flex items-center gap-2 rounded-lg px-3 py-2 font-medium hover:bg-slate-50 ${
               showArchived ? "bg-amber-50 text-amber-800" : "text-slate-700"
             }`}
@@ -678,7 +681,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-[14px]">
               📦
             </span>
-            <span>アーカイブ</span>
+            <span>{t(locale, "archived")}</span>
           </Link>
           <Link
             href="/new"
@@ -687,7 +690,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[16px] text-white">
               ＋
             </span>
-            <span>新規作成</span>
+            <span>{t(locale, "newDocument")}</span>
           </Link>
           <Link
             href="/settings"
@@ -696,7 +699,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[14px]">
               ⚙
             </span>
-            <span>設定</span>
+            <span>{t(locale, "settings")}</span>
           </Link>
         </nav>
         <div className="border-t border-slate-200 px-3 py-3 text-[11px] text-slate-500">
@@ -704,7 +707,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             href="/auth/logout"
             className="flex w-full items-center justify-between rounded-lg px-2 py-1 hover:bg-slate-50"
           >
-            <span>ログアウト</span>
+            <span>{locale === "en" ? "Log out" : "ログアウト"}</span>
           </Link>
         </div>
       </aside>
@@ -717,7 +720,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
             <div className="flex items-center gap-4">
               <h1 className="text-sm font-semibold text-slate-900">
-                ドキュメントワークスペース
+                {locale === "en" ? "Document Workspace" : "ドキュメントワークスペース"}
               </h1>
               {/* 組織スイッチャー */}
               <OrganizationSwitcher
@@ -728,13 +731,14 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
               {/* 簡易ステータスバッジ（運用ポリシーの可視化用） */}
               <span className="hidden items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200 sm:inline-flex">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                稼働中
+                {t(locale, "statusOk")}
               </span>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-[11px] text-slate-500">
-                合計 {totalCount} 件・ピン {pinnedCount} 件・お気に入り{" "}
-                {favoriteCount} 件・アーカイブ {archivedCount} 件
+                {locale === "en"
+                  ? `${totalCount} total · ${pinnedCount} pinned · ${favoriteCount} favorites · ${archivedCount} archived`
+                  : `合計 ${totalCount} 件・ピン ${pinnedCount} 件・お気に入り ${favoriteCount} 件・アーカイブ ${archivedCount} 件`}
               </span>
               <Link
                 href="/app/whats-new"
@@ -763,10 +767,10 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           <div className="stat-card stat-card-highlight group hover-lift">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-slate-500">ドキュメント総数</p>
+                <p className="text-xs font-medium text-slate-500">{t(locale, "totalDocuments")}</p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {totalCount}
-                  <span className="ml-1 text-sm font-normal text-slate-400">件</span>
+                  <span className="ml-1 text-sm font-normal text-slate-400">{t(locale, "docs")}</span>
                 </p>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-sky-500 text-lg text-white shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
@@ -776,7 +780,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             {lastActivityAt && (
               <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-500">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                最近の操作: {lastActivityAt}
+                {locale === "en" ? `Last activity: ${lastActivityAt}` : `最近の操作: ${lastActivityAt}`}
               </p>
             )}
           </div>
@@ -785,10 +789,10 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           <div className="stat-card group hover-lift">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-slate-500">ピン留め</p>
+                <p className="text-xs font-medium text-slate-500">{t(locale, "pinned")}</p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {pinnedCount}
-                  <span className="ml-1 text-sm font-normal text-slate-400">件</span>
+                  <span className="ml-1 text-sm font-normal text-slate-400">{t(locale, "docs")}</span>
                 </p>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-lg group-hover:scale-110 transition-transform">
@@ -796,7 +800,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
               </div>
             </div>
             <p className="mt-3 text-[11px] text-slate-500">
-              一覧の先頭に表示されます
+              {locale === "en" ? "Shown at top of list" : "一覧の先頭に表示されます"}
             </p>
           </div>
 
@@ -804,10 +808,10 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           <div className="stat-card group hover-lift">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-slate-500">お気に入り</p>
+                <p className="text-xs font-medium text-slate-500">{t(locale, "favorites")}</p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {favoriteCount}
-                  <span className="ml-1 text-sm font-normal text-slate-400">件</span>
+                  <span className="ml-1 text-sm font-normal text-slate-400">{t(locale, "docs")}</span>
                 </p>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-lg group-hover:scale-110 transition-transform">
@@ -815,7 +819,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
               </div>
             </div>
             <p className="mt-3 text-[11px] text-slate-500">
-              よく使うドキュメントを素早く発見
+              {locale === "en" ? "Quick access to frequently used docs" : "よく使うドキュメントを素早く発見"}
             </p>
           </div>
 
@@ -823,11 +827,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           <div className="stat-card group hover-lift">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs font-medium text-slate-500">インサイト</p>
+                <p className="text-xs font-medium text-slate-500">{locale === "en" ? "Insights" : "インサイト"}</p>
                 <p className="mt-2 text-lg font-bold text-slate-900">
-                  直近30日
+                  {t(locale, "last30Days")}
                   <span className="ml-1 text-emerald-600">{createdLast30Days}</span>
-                  <span className="text-sm font-normal text-slate-400">件</span>
+                  <span className="text-sm font-normal text-slate-400">{t(locale, "docs")}</span>
                 </p>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-lg group-hover:scale-110 transition-transform">
@@ -838,33 +842,33 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
               <div className="flex items-center justify-between text-slate-500">
                 <dt className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
-                  カテゴリ
+                  {locale === "en" ? "Categories" : "カテゴリ"}
                 </dt>
-                <dd className="font-semibold text-slate-700">{categoryCount} 種類</dd>
+                <dd className="font-semibold text-slate-700">{categoryCount} {locale === "en" ? "types" : "種類"}</dd>
               </div>
               <div className="flex items-center justify-between text-slate-500">
                 <dt className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  共有中
+                  {locale === "en" ? "Shared" : "共有中"}
                 </dt>
-                <dd className="font-semibold text-slate-700">{sharedCount} 件</dd>
+                <dd className="font-semibold text-slate-700">{sharedCount} {t(locale, "docs")}</dd>
               </div>
               <div className="flex items-center justify-between text-slate-500">
                 <dt className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
-                  最近アクティブなドキュメント
+                  {t(locale, "recentActive")}
                 </dt>
                 <dd className="font-semibold text-slate-700">
-                  {activeMemberCount} 件
+                  {activeMemberCount} {t(locale, "docs")}
                 </dd>
               </div>
               <div className="flex items-center justify-between text-slate-500">
                 <dt className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  平均文字数
+                  {locale === "en" ? "Avg. chars" : "平均文字数"}
                 </dt>
                 <dd className="font-semibold text-slate-700">
-                  {avgContentLength.toLocaleString("ja-JP")}
+                  {avgContentLength.toLocaleString(locale === "en" ? "en-US" : "ja-JP")}
                 </dd>
               </div>
             </dl>
@@ -923,13 +927,13 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                 htmlFor="q"
                 className="mb-1 block text-xs font-medium text-slate-700"
               >
-                検索（タイトル・本文・タグ）
+                {locale === "en" ? "Search (title, content, tags)" : "検索（タイトル・本文・タグ）"}
               </label>
               <input
                 id="q"
                 name="q"
                 defaultValue={query}
-                placeholder="例: プロジェクト計画, API 設計..."
+                placeholder={locale === "en" ? "e.g. Project plan, API design..." : "例: プロジェクト計画, API 設計..."}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
               />
             </div>
@@ -939,7 +943,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                 htmlFor="category"
                 className="mb-1 block text-xs font-medium text-slate-700"
               >
-                カテゴリ
+                {locale === "en" ? "Category" : "カテゴリ"}
               </label>
               <select
                 id="category"
@@ -947,7 +951,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                 defaultValue={category}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
               >
-                <option value="">すべて</option>
+                <option value="">{t(locale, "filterAll")}</option>
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
@@ -961,7 +965,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                 htmlFor="sort"
                 className="mb-1 block text-xs font-medium text-slate-700"
               >
-                並び順
+                {locale === "en" ? "Sort" : "並び順"}
               </label>
               <select
                 id="sort"
@@ -969,8 +973,8 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                 defaultValue={sort}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
               >
-                <option value="desc">新しい順</option>
-                <option value="asc">古い順</option>
+                <option value="desc">{locale === "en" ? "Newest first" : "新しい順"}</option>
+                <option value="asc">{locale === "en" ? "Oldest first" : "古い順"}</option>
               </select>
             </div>
 
@@ -984,7 +988,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                     defaultChecked={onlyPinned}
                     className="h-3 w-3 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
                   />
-                  <span>ピンのみ</span>
+                  <span>{locale === "en" ? "Pinned only" : "ピンのみ"}</span>
                 </label>
                 <label className="inline-flex items-center gap-1">
                   <input
@@ -994,7 +998,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                     defaultChecked={onlyFavorites}
                     className="h-3 w-3 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500"
                   />
-                  <span>お気に入りのみ</span>
+                  <span>{locale === "en" ? "Favorites only" : "お気に入りのみ"}</span>
                 </label>
               </div>
               <div className="flex items-center gap-2">
@@ -1002,13 +1006,13 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                   type="submit"
                   className="inline-flex items-center justify-center rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-400"
                 >
-                  検索
+                  {locale === "en" ? "Search" : "検索"}
                 </button>
                 <Link
                   href="/new"
                   className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
                 >
-                  新規作成
+                  {t(locale, "newDocument")}
                 </Link>
               </div>
             </div>
@@ -1016,46 +1020,46 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
 
           {/* クイックフィルタ */}
           <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-            <span className="text-slate-500">クイックフィルタ:</span>
+            <span className="text-slate-500">{locale === "en" ? "Quick filters:" : "クイックフィルタ:"}</span>
             <Link
-              href="/app"
+              href={locale === "en" ? "/app?lang=en" : "/app"}
               className={`inline-flex items-center rounded-full px-2 py-1 ${
                 !query && !category && !onlyFavorites && !onlyPinned && !showArchived
                   ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                   : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
               }`}
             >
-              すべて
+              {t(locale, "filterAll")}
             </Link>
             <Link
-              href="/app?onlyPinned=1"
+              href={locale === "en" ? "/app?onlyPinned=1&lang=en" : "/app?onlyPinned=1"}
               className={`inline-flex items-center rounded-full px-2 py-1 ${
                 onlyPinned
                   ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                   : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
               }`}
             >
-              ピンだけ
+              {locale === "en" ? "Pinned" : "ピンだけ"}
             </Link>
             <Link
-              href="/app?onlyFavorites=1"
+              href={locale === "en" ? "/app?onlyFavorites=1&lang=en" : "/app?onlyFavorites=1"}
               className={`inline-flex items-center rounded-full px-2 py-1 ${
                 onlyFavorites
                   ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
                   : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
               }`}
             >
-              お気に入りだけ
+              {locale === "en" ? "Favorites" : "お気に入りだけ"}
             </Link>
             <Link
-              href="/app?archived=1"
+              href={locale === "en" ? "/app?archived=1&lang=en" : "/app?archived=1"}
               className={`inline-flex items-center rounded-full px-2 py-1 ${
                 showArchived
                   ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
                   : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
               }`}
             >
-              アーカイブ
+              {t(locale, "archived")}
             </Link>
           </div>
         </section>
