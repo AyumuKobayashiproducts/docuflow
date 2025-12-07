@@ -16,9 +16,7 @@ export function UserMenu() {
       if (!active) return;
       const userEmail = data.user?.email ?? "";
       const metaProvider =
-        // @ts-expect-error app_metadata is provided by Supabase User
         (data.user?.app_metadata?.provider as string | undefined) ??
-        // @ts-expect-error identities is provided by Supabase User
         (data.user?.identities?.[0]?.provider as string | undefined);
 
       if (userEmail) {
