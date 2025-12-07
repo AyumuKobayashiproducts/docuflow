@@ -7,7 +7,7 @@ import {
   OrganizationRole,
   getRoleDisplayName,
   getRoleBadgeClass,
-} from "@/lib/organizations";
+} from "@/lib/organizationTypes";
 
 type OrganizationWithRole = {
   organization: Organization;

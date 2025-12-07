@@ -8,17 +8,12 @@
 
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabaseClient";
-
-// 組織ロール
-export type OrganizationRole = "owner" | "admin" | "member";
-
-// 組織の型
-export type Organization = {
-  id: string;
-  name: string;
-  slug: string;
-  created_at: string;
-};
+import {
+  OrganizationRole,
+  Organization,
+  getRoleDisplayName,
+  getRoleBadgeClass,
+} from "@/lib/organizationTypes";
 
 // メンバーシップ（所属情報）
 export type OrganizationMembership = {
@@ -319,38 +314,4 @@ export async function acceptInvitation(
   return { success: true, error: null };
 }
 
-/**
- * ロールの表示名
- */
-export function getRoleDisplayName(role: OrganizationRole): string {
-  switch (role) {
-    case "owner":
-      return "オーナー";
-    case "admin":
-      return "管理者";
-    case "member":
-      return "メンバー";
-    default:
-      return role;
-  }
-}
-
-/**
- * ロールのバッジカラー
- */
-export function getRoleBadgeClass(role: OrganizationRole): string {
-  switch (role) {
-    case "owner":
-      return "bg-amber-100 text-amber-800 border-amber-200";
-    case "admin":
-      return "bg-sky-100 text-sky-800 border-sky-200";
-    case "member":
-      return "bg-slate-100 text-slate-700 border-slate-200";
-    default:
-      return "bg-slate-100 text-slate-700 border-slate-200";
-  }
-}
-
-
-
-
+// getRoleDisplayName / getRoleBadgeClass は organizationTypes から再利用

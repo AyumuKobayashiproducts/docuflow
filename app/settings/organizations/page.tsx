@@ -9,10 +9,12 @@ import {
   getOrganizationMembers,
   getUserRoleInOrganization,
   createInvitation,
+} from "@/lib/organizations";
+import {
   getRoleDisplayName,
   getRoleBadgeClass,
   OrganizationRole,
-} from "@/lib/organizations";
+} from "@/lib/organizationTypes";
 
 type PageProps = {
   searchParams: Promise<{
