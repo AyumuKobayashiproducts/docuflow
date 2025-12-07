@@ -295,15 +295,21 @@ export default function NewDocumentPage({ searchParams }: PageProps) {
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
                       📝
                     </span>
-                    タイトル
+                    {locale === "en" ? "Title" : "タイトル"}
                     <span className="text-xs font-normal text-slate-400">
-                      （空欄ならAIが自動生成）
+                      {locale === "en"
+                        ? "(AI will generate if left empty)"
+                        : "（空欄ならAIが自動生成）"}
                     </span>
                   </label>
                   <input
                     id="title"
                     name="title"
-                    placeholder="例: プロダクト要件定義書"
+                    placeholder={
+                      locale === "en"
+                        ? "e.g. Product requirements document"
+                        : "例: プロダクト要件定義書"
+                    }
                     className="input"
                   />
                 </div>
@@ -317,15 +323,21 @@ export default function NewDocumentPage({ searchParams }: PageProps) {
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
                       🏷️
                     </span>
-                    カテゴリ
+                    {locale === "en" ? "Category" : "カテゴリ"}
                     <span className="text-xs font-normal text-slate-400">
-                      （空欄ならAIが自動判定）
+                      {locale === "en"
+                        ? "(If left empty, AI will infer a category)"
+                        : "（空欄ならAIが自動判定）"}
                     </span>
                   </label>
                   <input
                     id="category"
                     name="category"
-                    placeholder="例: 仕様書 / 議事録 / 企画書"
+                    placeholder={
+                      locale === "en"
+                        ? "e.g. Spec / Meeting notes / Proposal"
+                        : "例: 仕様書 / 議事録 / 企画書"
+                    }
                     className="input"
                   />
                 </div>
@@ -339,17 +351,22 @@ export default function NewDocumentPage({ searchParams }: PageProps) {
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
                       📄
                     </span>
-                    本文
+                    {locale === "en" ? "Body" : "本文"}
                   </label>
                   <p className="mb-3 text-xs text-slate-500">
-                    この本文をもとにAIが要約とタグ（最大3つ）を自動生成します。
-                    ファイルをアップロードした場合は、抽出されたテキストが自動で保存されます。
+                    {locale === "en"
+                      ? "AI will generate a summary and up to 3 tags from this body. If you upload a file, the extracted text will be saved automatically."
+                      : "この本文をもとにAIが要約とタグ（最大3つ）を自動生成します。ファイルをアップロードした場合は、抽出されたテキストが自動で保存されます。"}
                   </p>
                   <textarea
                     id="rawContent"
                     name="rawContent"
                     rows={14}
-                    placeholder="ドキュメントの本文を入力またはペーストしてください..."
+                    placeholder={
+                      locale === "en"
+                        ? "Paste or type the document body here..."
+                        : "ドキュメントの本文を入力またはペーストしてください..."
+                    }
                     className="input resize-none font-mono text-sm"
                   />
                 </div>
@@ -360,10 +377,12 @@ export default function NewDocumentPage({ searchParams }: PageProps) {
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
                       📁
                     </span>
-                    ファイルアップロード
+                    {locale === "en" ? "File upload" : "ファイルアップロード"}
                   </label>
                   <p className="mb-3 text-xs text-slate-500">
-                    PDF / Word（.doc, .docx）に対応。最大10MBまで。
+                    {locale === "en"
+                      ? "Supports PDF / Word (.doc, .docx), up to 10MB."
+                      : "PDF / Word（.doc, .docx）に対応。最大10MBまで。"}
                   </p>
                   <input
                     id="file"
@@ -379,14 +398,16 @@ export default function NewDocumentPage({ searchParams }: PageProps) {
                 <div className="border-t border-slate-200 pt-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <p className="text-xs text-slate-500">
-                      💡 AI要約ありは処理に数秒かかります。急ぎの場合は「高速保存」をお使いください。
+                      {locale === "en"
+                        ? "💡 AI summary can take a few seconds. If you're in a hurry, use “Save without AI”."
+                        : "💡 AI要約ありは処理に数秒かかります。急ぎの場合は「高速保存」をお使いください。"}
                     </p>
                     <div className="flex items-center gap-3">
                       <button
                         type="reset"
                         className="btn btn-secondary text-xs"
                       >
-                        クリア
+                        {locale === "en" ? "Clear" : "クリア"}
                       </button>
                       <NewSubmitButtons
                         fastAction={fastCreateDocument}
