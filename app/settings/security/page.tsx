@@ -140,28 +140,31 @@ export default function SecuritySettingsPage({
 
         <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 shadow-sm">
           <h2 className="mb-2 text-sm font-semibold text-slate-900">
-            2段階認証（2FA）
+            {locale === "en" ? "Two-factor authentication (2FA)" : "2段階認証（2FA）"}
           </h2>
           <p className="text-xs text-slate-600">
-            TOTP アプリ（Google Authenticator など）による 2FA
-            対応を想定しています。現在は UI の設計のみを行い、実装は今後の拡張として位置付けています。
+            {locale === "en"
+              ? "Planned support for 2FA via TOTP apps (Google Authenticator, etc.). Currently only the UI design is complete; implementation is planned as a future enhancement."
+              : "TOTP アプリ（Google Authenticator など）による 2FA 対応を想定しています。現在は UI の設計のみを行い、実装は今後の拡張として位置付けています。"}
           </p>
           <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-[11px] text-slate-700">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-400 text-[10px] text-white">
               🔒
             </span>
-            Coming soon: TOTP ベースの 2段階認証
+            {locale === "en"
+              ? "Coming soon: TOTP-based two-factor authentication"
+              : "Coming soon: TOTP ベースの 2段階認証"}
           </div>
         </section>
 
         <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 shadow-sm">
           <h2 className="mb-2 text-sm font-semibold text-slate-900">
-            SSO（Single Sign-On）
+            SSO {locale === "en" ? "(Single Sign-On)" : "（Single Sign-On）"}
           </h2>
           <p className="text-xs text-slate-600">
-            Google Workspace / Microsoft Entra ID などの IdP と連携した SSO
-            対応を想定しています。組織 (`organizations`) 単位で SSO
-            を有効化する設計です。
+            {locale === "en"
+              ? "Planned support for SSO with identity providers like Google Workspace and Microsoft Entra ID, managed at the organization level."
+              : "Google Workspace / Microsoft Entra ID などの IdP と連携した SSO 対応を想定しています。組織 (`organizations`) 単位で SSO を有効化する設計です。"}
           </p>
           <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-200 px-3 py-1 text-[11px] text-slate-700">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-400 text-[10px] text-white">

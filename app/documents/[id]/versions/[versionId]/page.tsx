@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Logo } from "@/components/Logo";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromParam } from "@/lib/i18n";
 
 // JST 表示用フォーマット（詳細画面と同じロジック）
 function formatJstDateTime(value: string | null): string | null {
@@ -25,6 +27,9 @@ type PageProps = {
   params: {
     id: string;
     versionId: string;
+  };
+  searchParams?: {
+    lang?: string;
   };
 };
 
@@ -84,8 +89,9 @@ function diffLines(oldText: string, newText: string): DiffPart[] {
   return result;
 }
 
-export default async function VersionComparePage({ params }: PageProps) {
+export default async function VersionComparePage({ params, searchParams }: PageProps) {
   const { id, versionId } = params;
+  const locale: Locale = getLocaleFromParam(searchParams?.lang);
 
   const { data: docData, error: docError } = await supabase
     .from("documents")
@@ -139,17 +145,25 @@ export default async function VersionComparePage({ params }: PageProps) {
           <div className="flex items-center gap-3">
             <Logo />
             <div className="text-xs text-slate-600">
-              <p className="font-semibold">バージョン比較</p>
+              <p className="font-semibold">
+                {locale === "en" ? "Version comparison" : "バージョン比較"}
+              </p>
               <p className="text-[11px]">
-                現在の内容と、選択したバージョンの内容を左右に並べて表示します。
+                {locale === "en"
+                  ? "Compare the current version with a previous version side by side."
+                  : "現在の内容と、選択したバージョンの内容を左右に並べて表示します。"}
               </p>
             </div>
           </div>
           <Link
-            href={`/documents/${doc.id}`}
+            href={
+              locale === "en"
+                ? `/documents/${doc.id}?lang=en`
+                : `/documents/${doc.id}`
+            }
             className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
           >
-            詳細へ戻る
+            {locale === "en" ? "Back to details" : "詳細へ戻る"}
           </Link>
         </div>
       </header>
@@ -159,7 +173,7 @@ export default async function VersionComparePage({ params }: PageProps) {
           {/* 現在の内容 */}
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="mb-2 text-xs font-semibold text-slate-800">
-              現在の内容
+              {locale === "en" ? "Current version" : "現在の内容"}
             </h2>
             <p className="mb-1 text-[11px] text-slate-500">
               {currentCreatedAt}
@@ -169,19 +183,22 @@ export default async function VersionComparePage({ params }: PageProps) {
             </h3>
             {doc.category && (
               <p className="mt-1 text-[11px] text-slate-600">
-                カテゴリ: {doc.category}
+                {locale === "en" ? "Category: " : "カテゴリ: "}
+                {doc.category}
               </p>
             )}
             {doc.summary && (
               <div className="mt-3 rounded-md bg-emerald-50/70 p-2 text-[11px] text-slate-800">
-                <p className="mb-1 font-semibold text-emerald-800">AI 要約</p>
+                <p className="mb-1 font-semibold text-emerald-800">
+                  {locale === "en" ? "AI Summary" : "AI 要約"}
+                </p>
                 <p className="whitespace-pre-wrap">{doc.summary}</p>
               </div>
             )}
             {doc.raw_content && (
               <div className="mt-3">
                 <p className="mb-1 text-[11px] font-semibold text-slate-700">
-                  本文
+                  {locale === "en" ? "Body" : "本文"}
                 </p>
                 <div className="h-64 overflow-auto rounded-md border border-slate-100 bg-slate-50 p-2 text-[11px] text-slate-800">
                   <pre className="whitespace-pre-wrap font-sans">
@@ -195,23 +212,25 @@ export default async function VersionComparePage({ params }: PageProps) {
           {/* 選択したバージョン */}
           <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="mb-2 text-xs font-semibold text-slate-800">
-              このバージョン
+              {locale === "en" ? "This version" : "このバージョン"}
             </h2>
             <p className="mb-1 text-[11px] text-slate-500">
               {versionCreatedAt}
             </p>
             <h3 className="text-sm font-semibold text-slate-900">
-              {version.title || "（タイトルなし）"}
+              {version.title ||
+                (locale === "en" ? "(No title)" : "（タイトルなし）")}
             </h3>
             {version.category && (
               <p className="mt-1 text-[11px] text-slate-600">
-                カテゴリ: {version.category}
+                {locale === "en" ? "Category: " : "カテゴリ: "}
+                {version.category}
               </p>
             )}
             {version.summary && (
               <div className="mt-3 rounded-md bg-slate-50 p-2 text-[11px] text-slate-800">
                 <p className="mb-1 font-semibold text-slate-700">
-                  当時の AI 要約
+                  {locale === "en" ? "AI Summary at this version" : "当時の AI 要約"}
                 </p>
                 <p className="whitespace-pre-wrap">{version.summary}</p>
               </div>
@@ -219,7 +238,7 @@ export default async function VersionComparePage({ params }: PageProps) {
             {version.raw_content && (
               <div className="mt-3">
                 <p className="mb-1 text-[11px] font-semibold text-slate-700">
-                  当時の本文
+                  {locale === "en" ? "Body at this version" : "当時の本文"}
                 </p>
                 <div className="h-64 overflow-auto rounded-md border border-slate-100 bg-slate-50 p-2 text-[11px] text-slate-800">
                   <pre className="whitespace-pre-wrap font-sans">
@@ -234,16 +253,19 @@ export default async function VersionComparePage({ params }: PageProps) {
         {/* 差分ハイライト */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-2 text-xs font-semibold text-slate-800">
-            本文の差分ハイライト
+            {locale === "en" ? "Body diff highlight" : "本文の差分ハイライト"}
           </h2>
           <p className="mb-2 text-[11px] text-slate-500">
-            左が「- 当時の本文」、右が「+
-            現在の本文」です。行単位で追加・削除された箇所を色分けしています。
+            {locale === "en"
+              ? '"-" indicates removed lines, "+" indicates added lines. Line-by-line diff highlighting.'
+              : '左が「- 当時の本文」、右が「+ 現在の本文」です。行単位で追加・削除された箇所を色分けしています。'}
           </p>
           <div className="h-64 overflow-auto rounded-md border border-slate-100 bg-slate-50 p-2 text-[11px] font-mono text-slate-800">
             {diff.length === 0 ? (
               <p className="text-[11px] text-slate-500">
-                本文の差分はありません。
+                {locale === "en"
+                  ? "No differences in the body text."
+                  : "本文の差分はありません。"}
               </p>
             ) : (
               diff.map((part, idx) => {

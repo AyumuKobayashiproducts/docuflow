@@ -426,26 +426,44 @@ type DashboardProps = {
   }>;
 };
 
-function describeActivity(log: ActivityLog): string {
+function describeActivity(log: ActivityLog, locale: Locale): string {
   switch (log.action) {
     case "create_document":
-      return "ドキュメントを作成しました";
+      return locale === "en"
+        ? "Created a document"
+        : "ドキュメントを作成しました";
     case "update_document":
-      return "ドキュメントを更新しました";
+      return locale === "en"
+        ? "Updated a document"
+        : "ドキュメントを更新しました";
     case "delete_document":
-      return "ドキュメントを削除しました";
+      return locale === "en"
+        ? "Deleted a document"
+        : "ドキュメントを削除しました";
     case "toggle_favorite":
-      return "お気に入り状態を変更しました";
+      return locale === "en"
+        ? "Toggled favorite"
+        : "お気に入り状態を変更しました";
     case "toggle_pinned":
-      return "ピン留め状態を変更しました";
+      return locale === "en"
+        ? "Toggled pinned"
+        : "ピン留め状態を変更しました";
     case "enable_share":
-      return "共有リンクを有効にしました";
+      return locale === "en"
+        ? "Enabled share link"
+        : "共有リンクを有効にしました";
     case "disable_share":
-      return "共有リンクを無効にしました";
+      return locale === "en"
+        ? "Disabled share link"
+        : "共有リンクを無効にしました";
     case "archive_document":
-      return "ドキュメントをアーカイブしました";
+      return locale === "en"
+        ? "Archived a document"
+        : "ドキュメントをアーカイブしました";
     case "restore_document":
-      return "ドキュメントをアーカイブから復元しました";
+      return locale === "en"
+        ? "Restored a document from archive"
+        : "ドキュメントをアーカイブから復元しました";
     default:
       return log.action;
   }
@@ -710,12 +728,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           </Link>
         </nav>
         <div className="border-t border-slate-200 px-3 py-3 text-[11px] text-slate-500">
-          <Link
-            href="/auth/logout"
-            className="flex w-full items-center justify-between rounded-lg px-2 py-1 hover:bg-slate-50"
-          >
-            <span>{locale === "en" ? "Log out" : "ログアウト"}</span>
-          </Link>
+          <p className="text-[10px] text-slate-400 px-2">
+            {locale === "en"
+              ? "Tip: Use the profile icon in the header to access account settings & log out."
+              : "ヒント: ヘッダー右上のアイコンからアカウント設定やログアウトができます。"}
+          </p>
         </div>
       </aside>
 
@@ -1156,15 +1173,47 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">
-              {showArchived ? "アーカイブされたドキュメント" : "あなたのドキュメント"}
+              {showArchived
+                ? locale === "en"
+                  ? "Archived documents"
+                  : "アーカイブされたドキュメント"
+                : locale === "en"
+                ? "Your documents"
+                : "あなたのドキュメント"}
             </h2>
             <div className="text-right text-xs text-slate-500">
               <p>
-                {sortedDocuments.length} 件
-                {query ? `（検索ワード: "${query}"）` : ""}
+                {locale === "en" ? (
+                  <>
+                    {sortedDocuments.length} documents
+                    {query && (
+                      <>
+                        {" "}
+                        (search: <span className="font-mono">{query}</span>)
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {sortedDocuments.length} 件
+                    {query ? `（検索ワード: "${query}"）` : ""}
+                  </>
+                )}
               </p>
-              {category && <p>カテゴリフィルタ: {category}</p>}
-              <p>並び順: {sort === "asc" ? "古い順" : "新しい順"}</p>
+              {category && (
+                <p>
+                  {locale === "en"
+                    ? `Category filter: ${category}`
+                    : `カテゴリフィルタ: ${category}`}
+                </p>
+              )}
+              <p>
+                {locale === "en"
+                  ? `Sort: ${
+                      sort === "asc" ? "Oldest first" : "Newest first"
+                    }`
+                  : `並び順: ${sort === "asc" ? "古い順" : "新しい順"}`}
+              </p>
               <form
                 id="bulk-delete-form"
                 action={deleteDocumentsBulk}
@@ -1172,9 +1221,22 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
               >
                 <BulkDeleteConfirmButton formId="bulk-delete-form" />
                 <span className="text-[10px] text-slate-400">
-                  「すべて選択」で表示中のカードを一括選択して
-                  <span className="font-semibold"> すべて削除 </span>
-                  / カード上で <span className="font-semibold">Shift + D</span> でも削除できます
+                  {locale === "en" ? (
+                    <>
+                      Use <span className="font-semibold">Select all</span> to
+                      select all visible cards and then{" "}
+                      <span className="font-semibold">Delete all</span>, or
+                      press <span className="font-semibold">Shift + D</span> on
+                      a card to delete it.
+                    </>
+                  ) : (
+                    <>
+                      「すべて選択」で表示中のカードを一括選択して
+                      <span className="font-semibold"> すべて削除 </span>
+                      / カード上で{" "}
+                      <span className="font-semibold">Shift + D</span> でも削除できます
+                    </>
+                  )}
                 </span>
               </form>
             </div>
@@ -1183,16 +1245,46 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           {sortedDocuments.length === 0 ? (
             <EmptyState
               icon={showArchived ? "📦" : "📄"}
-              title={showArchived ? "アーカイブされたドキュメントはありません" : "ドキュメントがまだありません"}
+              title={
+                showArchived
+                  ? locale === "en"
+                    ? "No archived documents"
+                    : "アーカイブされたドキュメントはありません"
+                  : locale === "en"
+                  ? "No documents yet"
+                  : "ドキュメントがまだありません"
+              }
               description={
                 showArchived
-                  ? "アーカイブに移動したドキュメントがここに表示されます。"
+                  ? locale === "en"
+                    ? "Documents you archive will appear here."
+                    : "アーカイブに移動したドキュメントがここに表示されます。"
                   : query
-                  ? `「${query}」に一致するドキュメントが見つかりませんでした。別のキーワードで検索してみてください。`
+                  ? locale === "en"
+                    ? `No documents match "${query}". Try a different keyword.`
+                    : `「${query}」に一致するドキュメントが見つかりませんでした。別のキーワードで検索してみてください。`
+                  : locale === "en"
+                  ? "Create your first document and experience AI-powered auto-summary and tagging."
                   : "最初のドキュメントを作成して、AIによる自動要約・タグ付けを体験しましょう。"
               }
-              actionLabel={showArchived ? "通常ビューに戻る" : "新規作成"}
-              actionHref={showArchived ? "/app" : "/new"}
+              actionLabel={
+                showArchived
+                  ? locale === "en"
+                    ? "Back to normal view"
+                    : "通常ビューに戻る"
+                  : locale === "en"
+                  ? "Create new"
+                  : "新規作成"
+              }
+              actionHref={
+                showArchived
+                  ? locale === "en"
+                    ? "/app?lang=en"
+                    : "/app"
+                  : locale === "en"
+                  ? "/new?lang=en"
+                  : "/new"
+              }
             />
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
@@ -1221,7 +1313,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                         value={doc.id}
                         form="bulk-delete-form"
                         className="mt-1 h-3 w-3 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
-                        aria-label={`${doc.title} を一括削除対象にする`}
+                        aria-label={
+                          locale === "en"
+                            ? `Select ${doc.title} for bulk delete`
+                            : `${doc.title} を一括削除対象にする`
+                        }
                       />
                       <div className="space-y-1">
                         <Link
@@ -1252,18 +1348,20 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                           >
                             {createdAt
                               ? formatJstDateTime(createdAt as string)
+                              : locale === "en"
+                              ? "No date"
                               : "作成日時なし"}
                           </time>
                         );
                       })()}
                       {(doc as Document).is_archived && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-700">
-                          📦 アーカイブ
+                          📦 {locale === "en" ? "Archived" : "アーカイブ"}
                         </span>
                       )}
                       {doc.share_token ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                          🔗 共有中
+                          🔗 {locale === "en" ? "Shared" : "共有中"}
                         </span>
                       ) : null}
                       <div className="flex gap-1">
@@ -1283,7 +1381,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                             }`}
                             aria-label={
                               doc.is_pinned
-                                ? "ピン留めを解除"
+                                ? locale === "en"
+                                  ? "Unpin"
+                                  : "ピン留めを解除"
+                                : locale === "en"
+                                ? "Pin"
                                 : "ピン留めする"
                             }
                           >
@@ -1306,7 +1408,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                             }`}
                             aria-label={
                               doc.is_favorite
-                                ? "お気に入りを解除"
+                                ? locale === "en"
+                                  ? "Remove from favorites"
+                                  : "お気に入りを解除"
+                                : locale === "en"
+                                ? "Add to favorites"
                                 : "お気に入りに追加"
                             }
                           >
@@ -1320,7 +1426,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                             type="submit"
                             className="rounded-full border border-red-200 bg-white px-2 text-[10px] text-red-400 hover:bg-red-50"
                             data-doc-delete-button
-                            aria-label="ドキュメントを削除"
+                            aria-label={
+                              locale === "en"
+                                ? "Delete document"
+                                : "ドキュメントを削除"
+                            }
                           >
                             🗑
                           </button>
@@ -1363,7 +1473,11 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                       {Array.isArray(doc.tags) && doc.tags.length > 0 && (
                         <span className="inline-flex items-center gap-1">
                           <span className="text-slate-400">🏷</span>
-                          <span>{doc.tags.length} 個のタグ</span>
+                          <span>
+                            {locale === "en"
+                              ? `${doc.tags.length} tag${doc.tags.length > 1 ? "s" : ""}`
+                              : `${doc.tags.length} 個のタグ`}
+                          </span>
                         </span>
                       )}
                     </div>
@@ -1372,7 +1486,9 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                         <span className="inline-flex items-center gap-1">
                           <span className="text-slate-400">✍️</span>
                           <span>
-                            {doc.raw_content
+                            {locale === "en"
+                              ? `${(doc.raw_content?.length ?? 0).toLocaleString("en-US")} chars`
+                              : doc.raw_content
                               ? `${doc.raw_content.length.toLocaleString("ja-JP")} 文字`
                               : "0 文字"}
                           </span>
@@ -1380,10 +1496,9 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                         <span className="inline-flex items-center gap-1">
                           <span className="text-slate-400">💬</span>
                           <span>
-                            {(commentCountMap.get(doc.id) ?? 0).toLocaleString(
-                              "ja-JP"
-                            )}{" "}
-                            件
+                            {locale === "en"
+                              ? `${(commentCountMap.get(doc.id) ?? 0).toLocaleString("en-US")} comment${(commentCountMap.get(doc.id) ?? 0) !== 1 ? "s" : ""}`
+                              : `${(commentCountMap.get(doc.id) ?? 0).toLocaleString("ja-JP")} 件`}
                           </span>
                         </span>
                       </div>
@@ -1406,7 +1521,13 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                           >
                             📦{" "}
                             <span>
-                              {(doc as Document).is_archived ? "復元" : "アーカイブ"}
+                              {(doc as Document).is_archived
+                                ? locale === "en"
+                                  ? "Restore"
+                                  : "復元"
+                                : locale === "en"
+                                ? "Archive"
+                                : "アーカイブ"}
                             </span>
                           </button>
                         </form>
@@ -1418,7 +1539,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                             className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-white px-2 py-0.5 text-[10px] font-medium text-red-500 hover:bg-red-50"
                             data-doc-delete-button
                           >
-                            🗑 <span>削除</span>
+                            🗑 <span>{locale === "en" ? "Delete" : "削除"}</span>
                           </button>
                         </form>
                       </div>
@@ -1434,16 +1555,20 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-900">
-                最近のアクティビティ
+                {locale === "en" ? "Recent activity" : "最近のアクティビティ"}
               </h2>
               <p className="text-[11px] text-slate-500">
-                直近 10 件の操作を表示します
+                {locale === "en"
+                  ? "Showing the 10 most recent actions."
+                  : "直近 10 件の操作を表示します"}
               </p>
             </div>
 
             {recentActivities.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-xs text-slate-500">
-                まだアクティビティがありません。ドキュメントの作成・編集・共有などを行うとここに履歴が表示されます。
+                {locale === "en"
+                  ? "No activity yet. When you create, edit, or share documents, your history will appear here."
+                  : "まだアクティビティがありません。ドキュメントの作成・編集・共有などを行うとここに履歴が表示されます。"}
               </p>
             ) : (
               <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white">
@@ -1454,7 +1579,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                   >
                     <div className="space-y-0.5">
                       <p className="text-slate-800">
-                        {describeActivity(log)}
+                        {describeActivity(log, locale)}
                       </p>
                       {log.document_title && (
                         <p className="text-[11px] text-slate-500">
@@ -1466,7 +1591,9 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                       dateTime={log.created_at}
                       className="shrink-0 text-[10px] text-slate-400"
                     >
-                      {new Date(log.created_at).toLocaleString("ja-JP")}
+                      {new Date(log.created_at).toLocaleString(
+                        locale === "en" ? "en-US" : "ja-JP",
+                      )}
                     </time>
                   </li>
                 ))}
