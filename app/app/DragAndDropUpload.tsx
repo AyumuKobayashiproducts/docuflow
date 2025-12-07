@@ -105,15 +105,19 @@ export function DragAndDropUpload({ uploadAction }: Props) {
         }`}
       >
         <p className="text-[11px] font-semibold text-slate-800">
-          ファイルをここにドラッグ＆ドロップしてカードを作成
+          {locale === "en"
+            ? "Drag & drop files here to create cards"
+            : "ファイルをここにドラッグ＆ドロップしてカードを作成"}
         </p>
         <p className="text-[10px] text-slate-500">
-          PDF / Word（.pdf / .doc / .docx）をドロップすると、AI がタイトル・概要・タグ付きのカードを自動生成します。
+          {locale === "en"
+            ? "Drop PDF / Word files (.pdf / .doc / .docx) and AI will generate cards with title, summary, and tags."
+            : "PDF / Word（.pdf / .doc / .docx）をドロップすると、AI がタイトル・概要・タグ付きのカードを自動生成します。"}
         </p>
         {isUploading && (
           <p className="mt-1 flex items-center gap-1 text-[10px] text-emerald-600">
             <span className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent" />
-            生成中…
+            {locale === "en" ? "Generating…" : "生成中…"}
           </p>
         )}
       </div>
