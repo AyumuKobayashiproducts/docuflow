@@ -691,7 +691,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             <span>{t(locale, "archived")}</span>
           </Link>
           <Link
-            href="/new"
+            href={locale === "en" ? "/new?lang=en" : "/new"}
             className="flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-slate-700 hover:bg-slate-50"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[16px] text-white">
@@ -1035,7 +1035,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                   {locale === "en" ? "Search" : "検索"}
                 </button>
                 <Link
-                  href="/new"
+                  href={locale === "en" ? "/new?lang=en" : "/new"}
                   className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
                 >
                   {t(locale, "newDocument")}
