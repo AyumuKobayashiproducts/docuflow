@@ -133,7 +133,7 @@ export default async function HomeEn() {
                 </div>
               </div>
               <Image
-                src="/screenshots/dashboard.png"
+                src="/screenshots/dashboard-en.png"
                 alt="DocuFlow dashboard"
                 width={1200}
                 height={800}
