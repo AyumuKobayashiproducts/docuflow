@@ -726,6 +726,12 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                 合計 {totalCount} 件・ピン {pinnedCount} 件・お気に入り{" "}
                 {favoriteCount} 件・アーカイブ {archivedCount} 件
               </span>
+              <Link
+                href="/app/whats-new"
+                className="hidden text-[11px] font-medium text-emerald-600 hover:text-emerald-700 underline-offset-2 hover:underline md:inline"
+              >
+                🆕 What's New
+              </Link>
               {userId && (
                 <NotificationBell
                   notifications={notifications}
