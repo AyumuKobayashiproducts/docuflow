@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, DragEvent } from "react";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 type Props = {
   uploadAction: (formData: FormData) => Promise<void>;
@@ -16,6 +18,7 @@ export function DragAndDropUpload({ uploadAction }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const locale: Locale = useLocale();
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -37,11 +40,16 @@ export function DragAndDropUpload({ uploadAction }: Props) {
     const droppedFiles = Array.from(event.dataTransfer.files ?? []);
     const validFiles = droppedFiles.filter(
       (file) =>
-        ALLOWED_TYPES.includes(file.type) || file.name.match(/\.(pdf|doc|docx)$/i)
+        ALLOWED_TYPES.includes(file.type) ||
+        file.name.match(/\.(pdf|doc|docx)$/i),
     );
 
     if (validFiles.length === 0) {
-      setMessage("PDF / Word（.pdf / .doc / .docx）のみアップロードできます。");
+      setMessage(
+        locale === "en"
+          ? "Only PDF / Word files (.pdf / .doc / .docx) can be uploaded."
+          : "PDF / Word（.pdf / .doc / .docx）のみアップロードできます。",
+      );
       return;
     }
 
@@ -54,19 +62,31 @@ export function DragAndDropUpload({ uploadAction }: Props) {
       setIsUploading(true);
       setMessage(
         validFiles.length === 1
-          ? "AI がドキュメントを読み込み中です…"
-          : `AI が ${validFiles.length} 件のドキュメントを読み込み中です…`
+          ? locale === "en"
+            ? "AI is processing your document…"
+            : "AI がドキュメントを読み込み中です…"
+          : locale === "en"
+          ? `AI is processing ${validFiles.length} documents…`
+          : `AI が ${validFiles.length} 件のドキュメントを読み込み中です…`,
       );
       await uploadAction(formData);
       // 成功するとサーバーアクション側で /app が再検証され、新しいカードが一覧に表示される
       setMessage(
         validFiles.length === 1
-          ? "カードを作成しました。数秒後に一覧へ反映されます。"
-          : `${validFiles.length} 枚のカードを作成しました。数秒後に一覧へ反映されます。`
+          ? locale === "en"
+            ? "Created a card. It will appear in the list in a few seconds."
+            : "カードを作成しました。数秒後に一覧へ反映されます。"
+          : locale === "en"
+          ? `Created ${validFiles.length} cards. They will appear in the list in a few seconds.`
+          : `${validFiles.length} 枚のカードを作成しました。数秒後に一覧へ反映されます。`,
       );
     } catch (e) {
       console.error(e);
-      setMessage("アップロードに失敗しました。時間をおいて再度お試しください。");
+      setMessage(
+        locale === "en"
+          ? "Upload failed. Please try again in a few moments."
+          : "アップロードに失敗しました。時間をおいて再度お試しください。",
+      );
     } finally {
       setIsUploading(false);
     }

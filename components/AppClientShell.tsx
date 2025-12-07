@@ -1,7 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { ToastProvider } from "@/components/Toast";
+import { GlobalLanguageToggle } from "@/components/GlobalLanguageToggle";
 
 // 遅延読み込みでパフォーマンス改善（クライアント専用）
 const CommandPalette = dynamic(
@@ -40,6 +42,9 @@ export function AppClientShell({ children }: { children: React.ReactNode }) {
   return (
     <ToastProvider>
       {children}
+      <Suspense fallback={null}>
+        <GlobalLanguageToggle />
+      </Suspense>
       <CommandPalette />
       <KeyboardShortcutsHelp />
       <ServiceWorkerRegistration />
@@ -47,6 +52,7 @@ export function AppClientShell({ children }: { children: React.ReactNode }) {
     </ToastProvider>
   );
 }
+
 
 
 

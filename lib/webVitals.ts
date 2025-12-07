@@ -72,18 +72,15 @@ export function initWebVitals() {
   // web-vitals v4 以降では onCLS/onFID 形式のAPIが推奨
   // 動的インポートにして型エラーを避けつつ、ブラウザ側だけで実行
   import("web-vitals")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .then((mod: any) => {
-      const onCLS = mod.onCLS ?? mod.getCLS;
-      const onFID = mod.onFID ?? mod.getFID;
-      const onFCP = mod.onFCP ?? mod.getFCP;
-      const onLCP = mod.onLCP ?? mod.getLCP;
-      const onTTFB = mod.onTTFB ?? mod.getTTFB;
+      const { onCLS, onFID, onFCP, onLCP, onTTFB } = mod;
 
-      onCLS && onCLS(sendToAnalytics);
-      onFID && onFID(sendToAnalytics);
-      onFCP && onFCP(sendToAnalytics);
-      onLCP && onLCP(sendToAnalytics);
-      onTTFB && onTTFB(sendToAnalytics);
+      if (onCLS) onCLS(sendToAnalytics);
+      if (onFID) onFID(sendToAnalytics);
+      if (onFCP) onFCP(sendToAnalytics);
+      if (onLCP) onLCP(sendToAnalytics);
+      if (onTTFB) onTTFB(sendToAnalytics);
     })
     .catch((error) => {
       console.error("Failed to init Web Vitals:", error);

@@ -40,7 +40,10 @@ export default function EnglishDemoPage() {
       {/* Sidebar */}
       <aside className="hidden border-r border-slate-200 bg-white md:flex md:w-60 md:flex-col">
         <div className="px-4 py-4">
-          <Logo withTagline />
+          <Logo
+            withTagline
+            tagline="Instantly organize PDF / Word materials with AI summaries"
+          />
         </div>
         <nav className="mt-4 flex flex-1 flex-col gap-1 px-2 text-sm text-slate-700">
           <a
@@ -108,7 +111,7 @@ export default function EnglishDemoPage() {
                 25 total · 3 pinned · 5 favorites · 2 archived
               </span>
               <span className="text-[11px] font-medium text-emerald-600 hover:text-emerald-700">
-                🆕 What's New
+              🆕 What&apos;s New
               </span>
               <button className="relative p-1.5 text-slate-500 hover:text-slate-700">
                 🔔
@@ -311,4 +314,5 @@ export default function EnglishDemoPage() {
     </div>
   );
 }
+
 

@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabaseBrowserClient";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 export default function ResetPasswordPage() {
+  const locale: Locale = useLocale();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -17,7 +20,9 @@ export default function ResetPasswordPage() {
     supabaseBrowser.auth.getSession().then(({ data }) => {
       if (!data.session) {
         setError(
-          "パスワード再設定用のリンクが無効か、期限切れです。もう一度メールからやり直してください。",
+          locale === "en"
+            ? "This password reset link is invalid or has expired. Please request a new email and try again."
+            : "パスワード再設定用のリンクが無効か、期限切れです。もう一度メールからやり直してください。",
         );
       } else {
         setReady(true);
@@ -31,12 +36,20 @@ export default function ResetPasswordPage() {
     setStatus(null);
 
     if (!password || !confirm) {
-      setError("新しいパスワードを2回入力してください。");
+      setError(
+        locale === "en"
+          ? "Please enter your new password twice."
+          : "新しいパスワードを2回入力してください。",
+      );
       return;
     }
 
     if (password !== confirm) {
-      setError("パスワードが一致していません。");
+      setError(
+        locale === "en"
+          ? "Passwords do not match."
+          : "パスワードが一致していません。",
+      );
       return;
     }
 
@@ -54,7 +67,9 @@ export default function ResetPasswordPage() {
     }
 
     setStatus(
-      "パスワードを更新しました。ログイン画面からログインしてください。",
+      locale === "en"
+        ? "Your password has been updated. Please log in again."
+        : "パスワードを更新しました。ログイン画面からログインしてください。",
     );
   };
 
@@ -66,7 +81,9 @@ export default function ResetPasswordPage() {
             <h1 className="text-lg font-semibold tracking-tight text-slate-900">
               DocuFlow
             </h1>
-            <p className="text-xs text-slate-500">パスワード再設定</p>
+            <p className="text-xs text-slate-500">
+              {locale === "en" ? "Reset password" : "パスワード再設定"}
+            </p>
           </div>
         </div>
       </header>
@@ -75,10 +92,14 @@ export default function ResetPasswordPage() {
         <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="space-y-1">
             <h2 className="text-base font-semibold text-slate-900">
-              新しいパスワードを設定
+              {locale === "en"
+                ? "Set a new password"
+                : "新しいパスワードを設定"}
             </h2>
             <p className="text-xs text-slate-500">
-              メールに記載されたリンクからアクセスしている場合のみ有効です。
+              {locale === "en"
+                ? "This page is only valid when opened from the link in your email."
+                : "メールに記載されたリンクからアクセスしている場合のみ有効です。"}
             </p>
           </div>
 
@@ -100,7 +121,7 @@ export default function ResetPasswordPage() {
                 htmlFor="password"
                 className="mb-1 block text-xs font-medium text-slate-700"
               >
-                新しいパスワード
+                {locale === "en" ? "New password" : "新しいパスワード"}
               </label>
               <input
                 id="password"
@@ -118,7 +139,9 @@ export default function ResetPasswordPage() {
                 htmlFor="confirm"
                 className="mb-1 block text-xs font-medium text-slate-700"
               >
-                新しいパスワード（確認）
+                {locale === "en"
+                  ? "New password (confirmation)"
+                  : "新しいパスワード（確認）"}
               </label>
               <input
                 id="confirm"
@@ -136,15 +159,23 @@ export default function ResetPasswordPage() {
               disabled={!ready || loading}
               className="inline-flex w-full items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {loading ? "更新中..." : "パスワードを更新"}
+              {loading
+                ? locale === "en"
+                  ? "Updating..."
+                  : "更新中..."
+                : locale === "en"
+                ? "Update password"
+                : "パスワードを更新"}
             </button>
           </form>
 
           <Link
-            href="/auth/login"
+            href={locale === "en" ? "/auth/login?lang=en" : "/auth/login"}
             className="mt-2 block text-center text-[11px] font-medium text-slate-500 underline-offset-4 hover:text-slate-700 hover:underline"
           >
-            ログイン画面に戻る
+            {locale === "en"
+              ? "Back to login"
+              : "ログイン画面に戻る"}
           </Link>
         </section>
       </main>

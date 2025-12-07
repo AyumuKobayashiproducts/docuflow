@@ -29,13 +29,13 @@ export default async function HomeEn() {
             <Logo size="md" />
             <nav className="flex items-center gap-4">
               <Link
-                href="/auth/login"
+                href="/auth/login?lang=en&redirectTo=/app?lang=en"
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
               >
                 Log in
               </Link>
               <Link
-                href="/auth/signup"
+                href="/auth/login?lang=en&redirectTo=/app?lang=en"
                 className="btn btn-primary"
               >
                 Get started for free
@@ -44,7 +44,7 @@ export default async function HomeEn() {
               <Link
                 href="/"
                 className="text-[11px] font-medium text-slate-400 hover:text-slate-700 transition-colors border border-slate-200 rounded-full px-2 py-0.5"
-                aria-label="日本語ページに切り替え"
+                aria-label="Switch to Japanese landing page"
               >
                 日本語
               </Link>
@@ -84,7 +84,7 @@ export default async function HomeEn() {
             {/* CTA Buttons */}
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/auth/signup"
+                href="/auth/login?lang=en&redirectTo=/app?lang=en"
                 className="btn btn-primary px-8 py-3.5 text-base"
               >
                 <span>Try DocuFlow for free</span>
@@ -103,7 +103,7 @@ export default async function HomeEn() {
                 </svg>
               </Link>
               <Link
-                href="/auth/login"
+                href="/auth/login?lang=en&redirectTo=/app?lang=en"
                 className="btn btn-secondary px-8 py-3.5 text-base"
               >
                 <span>Log in</span>

@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Locale } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 type ConfirmDialogProps = {
   isOpen: boolean;
@@ -17,21 +20,14 @@ export function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmLabel = "確認",
-  cancelLabel = "キャンセル",
+  confirmLabel,
+  cancelLabel,
   variant = "danger",
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setShow(true);
-    }
-  }, [isOpen]);
-
-  if (!isOpen && !show) return null;
+  const locale: Locale = useLocale();
+  if (!isOpen) return null;
 
   const icons = {
     danger: "⚠️",
@@ -41,12 +37,10 @@ export function ConfirmDialog({
 
   const handleConfirm = () => {
     onConfirm();
-    setShow(false);
   };
 
   const handleCancel = () => {
     onCancel();
-    setShow(false);
   };
 
   return (
@@ -80,10 +74,10 @@ export function ConfirmDialog({
 
           <div className="flex justify-end gap-3">
             <button onClick={handleCancel} className="btn btn-secondary">
-              {cancelLabel}
+              {cancelLabel ?? t(locale, "cancel")}
             </button>
             <button onClick={handleConfirm} className="btn btn-danger">
-              {confirmLabel}
+              {confirmLabel ?? t(locale, "confirm")}
             </button>
           </div>
         </div>
@@ -137,6 +131,7 @@ export function useConfirm() {
     closeDialog,
   };
 }
+
 
 
 

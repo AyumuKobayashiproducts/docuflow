@@ -4,9 +4,15 @@ type LogoProps = {
   withTagline?: boolean;
   className?: string;
   size?: "sm" | "md" | "lg";
+  tagline?: string;
 };
 
-export function Logo({ withTagline = false, className = "", size = "md" }: LogoProps) {
+export function Logo({
+  withTagline = false,
+  className = "",
+  size = "md",
+  tagline,
+}: LogoProps) {
   const sizes = {
     sm: {
       container: "h-7 w-7",
@@ -53,7 +59,7 @@ export function Logo({ withTagline = false, className = "", size = "md" }: LogoP
         </p>
         {withTagline && (
           <p className={`${s.tagline} text-slate-500 transition-colors duration-200 group-hover:text-slate-600`}>
-            AI 要約で、PDF / Word 資料を一瞬で整理
+            {tagline ?? "AI 要約で、PDF / Word 資料を一瞬で整理"}
           </p>
         )}
       </div>

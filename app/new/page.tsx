@@ -13,6 +13,8 @@ import { getActiveOrganizationId } from "@/lib/organizations";
 import { Logo } from "@/components/Logo";
 import { NewSubmitButtons } from "@/components/NewSubmitButtons";
 import { NewFileDropZone } from "@/components/NewFileDropZone";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromParam } from "@/lib/i18n";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -211,7 +213,15 @@ async function createDocument(formData: FormData) {
   redirect("/");
 }
 
-export default function NewDocumentPage() {
+type PageProps = {
+  searchParams?: {
+    lang?: string;
+  };
+};
+
+export default function NewDocumentPage({ searchParams }: PageProps) {
+  const locale: Locale = getLocaleFromParam(searchParams?.lang);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20">
       {/* Background Effects */}
@@ -225,10 +235,17 @@ export default function NewDocumentPage() {
         {/* Header */}
         <header className="glass border-b border-slate-200/50 sticky top-0 z-50">
           <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-            <Logo withTagline />
+            <Logo
+              withTagline
+              tagline={
+                locale === "en"
+                  ? "Create a new document and let AI summarize it"
+                  : "新しいドキュメントを作成して AI 要約を試す"
+              }
+            />
             <nav className="flex items-center gap-3">
               <Link
-                href="/app"
+                href={locale === "en" ? "/app?lang=en" : "/app"}
                 className="btn btn-secondary text-xs"
               >
                 <svg
@@ -244,7 +261,9 @@ export default function NewDocumentPage() {
                     d="M10 19l-7-7m0 0l7-7m-7 7h18"
                   />
                 </svg>
-                <span>一覧に戻る</span>
+                <span>
+                  {locale === "en" ? "Back to list" : "一覧に戻る"}
+                </span>
               </Link>
             </nav>
           </div>
@@ -253,9 +272,13 @@ export default function NewDocumentPage() {
         <main className="mx-auto max-w-5xl px-4 py-8">
           {/* Page Header */}
           <div className="mb-8 animate-fade-in">
-            <h1 className="text-2xl font-bold text-slate-900">新規ドキュメント</h1>
+            <h1 className="text-2xl font-bold text-slate-900">
+              {locale === "en" ? "New document" : "新規ドキュメント"}
+            </h1>
             <p className="mt-2 text-sm text-slate-500">
-              テキストを入力するか、PDF / Word ファイルをアップロードしてドキュメントを作成
+              {locale === "en"
+                ? "Enter text or upload a PDF / Word file to create a document."
+                : "テキストを入力するか、PDF / Word ファイルをアップロードしてドキュメントを作成"}
             </p>
           </div>
 
@@ -383,24 +406,57 @@ export default function NewDocumentPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-sky-500 text-sm text-white">
                     ✨
                   </div>
-                  <h3 className="font-semibold text-slate-900">AI機能について</h3>
+                  <h3 className="font-semibold text-slate-900">
+                    {locale === "en" ? "About AI features" : "AI機能について"}
+                  </h3>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  DocuFlowは GPT-4 を活用して、ドキュメントの要約・タグ付け・タイトル生成を自動で行います。日本語に最適化されています。
+                  {locale === "en"
+                    ? "DocuFlow uses GPT-4 to automatically generate summaries, tags, and titles for your documents. It is tuned for Japanese business documents, but also works with English content."
+                    : "DocuFlowは GPT-4 を活用して、ドキュメントの要約・タグ付け・タイトル生成を自動で行います。日本語の業務ドキュメントに最適化されています。"}
                 </p>
               </div>
 
               {/* Process Steps */}
               <div className="card p-5">
-                <h3 className="font-semibold text-slate-900 mb-4">処理の流れ</h3>
+                <h3 className="font-semibold text-slate-900 mb-4">
+                  {locale === "en" ? "Processing flow" : "処理の流れ"}
+                </h3>
                 <ol className="space-y-3">
                   {[
-                    { icon: "1️⃣", text: "テキスト入力 or ファイルアップロード" },
-                    { icon: "2️⃣", text: "AIが本文を解析して要約を生成" },
-                    { icon: "3️⃣", text: "関連タグ（最大3つ）を自動抽出" },
-                    { icon: "4️⃣", text: "データベースに保存して一覧に反映" },
+                    {
+                      icon: "1️⃣",
+                      text:
+                        locale === "en"
+                          ? "Enter text or upload a file"
+                          : "テキスト入力 or ファイルアップロード",
+                    },
+                    {
+                      icon: "2️⃣",
+                      text:
+                        locale === "en"
+                          ? "AI analyzes the body text and generates a summary"
+                          : "AIが本文を解析して要約を生成",
+                    },
+                    {
+                      icon: "3️⃣",
+                      text:
+                        locale === "en"
+                          ? "Up to 3 related tags are automatically extracted"
+                          : "関連タグ（最大3つ）を自動抽出",
+                    },
+                    {
+                      icon: "4️⃣",
+                      text:
+                        locale === "en"
+                          ? "The document is saved and appears in your list"
+                          : "データベースに保存して一覧に反映",
+                    },
                   ].map((step, i) => (
-                    <li key={i} className="flex items-start gap-3 text-xs text-slate-600">
+                    <li
+                      key={i}
+                      className="flex items-start gap-3 text-xs text-slate-600"
+                    >
                       <span className="text-base">{step.icon}</span>
                       <span>{step.text}</span>
                     </li>
@@ -412,27 +468,41 @@ export default function NewDocumentPage() {
               <div className="card p-5 bg-gradient-to-br from-amber-50/50 to-orange-50/50">
                 <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
                   <span>💡</span>
-                  おすすめの使い方
+                  {locale === "en" ? "Recommended use cases" : "おすすめの使い方"}
                 </h3>
                 <ul className="space-y-2 text-xs text-slate-600">
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500">•</span>
-                    <span>長いPDF資料をアップロードして要点だけを素早く把握</span>
+                    <span>
+                      {locale === "en"
+                        ? "Upload long PDF materials and grasp only the key points quickly"
+                        : "長いPDF資料をアップロードして要点だけを素早く把握"}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500">•</span>
-                    <span>会議の議事録を貼り付けて検索しやすいタグを自動付与</span>
+                    <span>
+                      {locale === "en"
+                        ? "Paste meeting minutes and automatically attach searchable tags"
+                        : "会議の議事録を貼り付けて検索しやすいタグを自動付与"}
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500">•</span>
-                    <span>社内ナレッジをカテゴリごとに整理してストック</span>
+                    <span>
+                      {locale === "en"
+                        ? "Organize internal knowledge by category and store it as a knowledge base"
+                        : "社内ナレッジをカテゴリごとに整理してストック"}
+                    </span>
                   </li>
                 </ul>
               </div>
 
               {/* Supported Formats */}
               <div className="card p-5">
-                <h3 className="font-semibold text-slate-900 mb-3">対応フォーマット</h3>
+                <h3 className="font-semibold text-slate-900 mb-3">
+                  {locale === "en" ? "Supported formats" : "対応フォーマット"}
+                </h3>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { ext: "PDF", color: "bg-red-50 text-red-600" },
@@ -448,7 +518,9 @@ export default function NewDocumentPage() {
                   ))}
                 </div>
                 <p className="mt-3 text-[11px] text-slate-500">
-                  最大ファイルサイズ: 10MB
+                  {locale === "en"
+                    ? "Max file size: 10MB"
+                    : "最大ファイルサイズ: 10MB"}
                 </p>
               </div>
             </aside>

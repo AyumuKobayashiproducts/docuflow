@@ -660,7 +660,14 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
       {/* サイドバー */}
       <aside className="hidden border-r border-slate-200 bg-white md:flex md:w-60 md:flex-col">
         <div className="px-4 py-4">
-          <Logo withTagline />
+          <Logo
+            withTagline
+            tagline={
+              locale === "en"
+                ? "Instantly organize PDF / Word materials with AI summaries"
+                : "AI 要約で、PDF / Word 資料を一瞬で整理"
+            }
+          />
         </div>
         <nav className="mt-4 flex flex-1 flex-col gap-1 px-2 text-sm text-slate-700">
           <Link
@@ -693,7 +700,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
             <span>{t(locale, "newDocument")}</span>
           </Link>
           <Link
-            href="/settings"
+            href={locale === "en" ? "/settings?lang=en" : "/settings"}
             className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-50"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-200 text-[14px]">
@@ -740,11 +747,24 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                   ? `${totalCount} total · ${pinnedCount} pinned · ${favoriteCount} favorites · ${archivedCount} archived`
                   : `合計 ${totalCount} 件・ピン ${pinnedCount} 件・お気に入り ${favoriteCount} 件・アーカイブ ${archivedCount} 件`}
               </span>
+              {/* Language toggle inside app */}
+              <Link
+                href={locale === "en" ? "/app" : "/app?lang=en"}
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600 hover:bg-slate-50"
+                aria-label={
+                  locale === "en"
+                    ? "日本語表示に切り替え"
+                    : "Switch to English interface"
+                }
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                <span>{locale === "en" ? "日本語" : "EN"}</span>
+              </Link>
               <Link
                 href="/app/whats-new"
                 className="hidden text-[11px] font-medium text-emerald-600 hover:text-emerald-700 underline-offset-2 hover:underline md:inline"
               >
-                🆕 What's New
+                🆕 What&apos;s New
               </Link>
               {userId && (
                 <NotificationBell
@@ -879,15 +899,21 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xs font-semibold text-slate-900">
-              カテゴリ別ドキュメント数（トップ3）
+              {locale === "en"
+                ? "Top 3 categories by document count"
+                : "カテゴリ別ドキュメント数（トップ3）"}
             </h2>
             <p className="text-[11px] text-slate-500">
-              カテゴリの偏りや使われ方の傾向をざっくり確認できます
+              {locale === "en"
+                ? "Quickly see which categories are used most frequently."
+                : "カテゴリの偏りや使われ方の傾向をざっくり確認できます"}
             </p>
           </div>
           {categoryStats.length === 0 ? (
             <p className="text-[11px] text-slate-500">
-              まだカテゴリが付いたドキュメントがありません。
+              {locale === "en"
+                ? "No documents with categories yet."
+                : "まだカテゴリが付いたドキュメントがありません。"}
             </p>
           ) : (
             <ul className="space-y-2">

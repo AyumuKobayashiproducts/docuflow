@@ -9,6 +9,8 @@ import {
   getNotificationLink,
   formatRelativeTime,
 } from "@/lib/notifications";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 type Props = {
   notifications: Notification[];
@@ -23,6 +25,7 @@ export function NotificationBell({
   markReadAction,
   markAllReadAction,
 }: Props) {
+  const locale: Locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +49,7 @@ export function NotificationBell({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="relative inline-flex items-center justify-center rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
-        aria-label="通知を開く"
+        aria-label={locale === "en" ? "Open notifications" : "通知を開く"}
       >
         <svg
           className="h-5 w-5"
@@ -71,7 +74,9 @@ export function NotificationBell({
       {isOpen && (
         <div className="absolute right-0 top-full z-50 mt-1 w-80 rounded-xl border border-slate-200 bg-white shadow-lg animate-fade-in">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <h3 className="text-sm font-semibold text-slate-900">通知</h3>
+            <h3 className="text-sm font-semibold text-slate-900">
+              {locale === "en" ? "Notifications" : "通知"}
+            </h3>
             {unreadCount > 0 && (
               <form action={markAllReadAction}>
                 <button
@@ -79,7 +84,9 @@ export function NotificationBell({
                   onClick={() => setIsOpen(false)}
                   className="text-xs text-emerald-600 hover:text-emerald-700 hover:underline"
                 >
-                  すべて既読にする
+                  {locale === "en"
+                    ? "Mark all as read"
+                    : "すべて既読にする"}
                 </button>
               </form>
             )}
@@ -91,7 +98,11 @@ export function NotificationBell({
                 <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xl">
                   🔔
                 </div>
-                <p className="text-sm text-slate-500">通知はありません</p>
+                <p className="text-sm text-slate-500">
+                  {locale === "en"
+                    ? "No notifications yet"
+                    : "通知はありません"}
+                </p>
               </div>
             ) : (
               <ul className="divide-y divide-slate-100">
@@ -145,7 +156,10 @@ export function NotificationBell({
                               {notification.type.replace("_", " ")}
                             </span>
                             <span className="text-[10px] text-slate-400">
-                              {formatRelativeTime(notification.created_at)}
+                              {formatRelativeTime(
+                                notification.created_at,
+                                locale
+                              )}
                             </span>
                           </div>
                         </div>
@@ -163,7 +177,9 @@ export function NotificationBell({
               onClick={() => setIsOpen(false)}
               className="block text-center text-xs text-slate-600 hover:text-emerald-600"
             >
-              すべての通知を見る
+              {locale === "en"
+                ? "View all notifications"
+                : "すべての通知を見る"}
             </Link>
           </div>
         </div>
@@ -171,6 +187,7 @@ export function NotificationBell({
     </div>
   );
 }
+
 
 
 

@@ -1,9 +1,12 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 export function RegenerateSummaryButton() {
   const { pending } = useFormStatus();
+  const locale: Locale = useLocale();
 
   return (
     <button
@@ -14,7 +17,15 @@ export function RegenerateSummaryButton() {
       {pending && (
         <span className="h-3 w-3 animate-spin rounded-full border border-emerald-300 border-t-transparent" />
       )}
-      <span>{pending ? "再生成中..." : "要約を再生成"}</span>
+      <span>
+        {pending
+          ? locale === "en"
+            ? "Regenerating..."
+            : "再生成中..."
+          : locale === "en"
+            ? "Regenerate summary"
+            : "要約を再生成"}
+      </span>
     </button>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 export default function Error({
   error,
@@ -10,6 +12,8 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const locale: Locale = useLocale();
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -36,12 +40,16 @@ export default function Error({
 
         {/* Error Message */}
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-          エラーが発生しました
+          {locale === "en" ? "An error has occurred" : "エラーが発生しました"}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mb-8">
-          申し訳ありません。予期しないエラーが発生しました。
+          {locale === "en"
+            ? "Sorry, an unexpected error occurred. Please try again or return to the dashboard."
+            : "申し訳ありません。予期しないエラーが発生しました。"}
           <br />
-          もう一度お試しいただくか、ダッシュボードに戻ってください。
+          {locale === "en"
+            ? "You can retry or go back to the dashboard."
+            : "もう一度お試しいただくか、ダッシュボードに戻ってください。"}
         </p>
 
         {/* Error Details (dev only) */}
@@ -72,16 +80,22 @@ export default function Error({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
-            <span>もう一度試す</span>
+            <span>{locale === "en" ? "Try again" : "もう一度試す"}</span>
           </button>
-          <Link href="/app" className="btn btn-secondary px-6">
-            <span>ダッシュボードへ</span>
+          <Link
+            href={locale === "en" ? "/app?lang=en" : "/app"}
+            className="btn btn-secondary px-6"
+          >
+            <span>
+              {locale === "en" ? "Back to dashboard" : "ダッシュボードへ"}
+            </span>
           </Link>
         </div>
       </div>
     </div>
   );
 }
+
 
 
 

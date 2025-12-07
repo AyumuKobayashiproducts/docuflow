@@ -7,6 +7,7 @@
  */
 
 import { supabase } from "@/lib/supabaseClient";
+import type { Locale } from "@/lib/i18n";
 
 // 通知タイプ
 export type NotificationType =
@@ -247,9 +248,12 @@ export function getNotificationLink(notification: Notification): string {
 }
 
 /**
- * 相対時間を表示用にフォーマット
+ * 相対時間を表示用にフォーマット（ロケール対応）
  */
-export function formatRelativeTime(dateString: string): string {
+export function formatRelativeTime(
+  dateString: string,
+  locale: Locale = "ja"
+): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -257,6 +261,18 @@ export function formatRelativeTime(dateString: string): string {
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
+
+  if (locale === "en") {
+    if (diffSec < 60) return "Just now";
+    if (diffMin < 60) return `${diffMin} min ago`;
+    if (diffHour < 24) return `${diffHour} hours ago`;
+    if (diffDay < 7) return `${diffDay} days ago`;
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  }
 
   if (diffSec < 60) return "たった今";
   if (diffMin < 60) return `${diffMin}分前`;
@@ -268,6 +284,7 @@ export function formatRelativeTime(dateString: string): string {
     day: "numeric",
   });
 }
+
 
 
 

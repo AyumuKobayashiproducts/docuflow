@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useToast } from "./Toast";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,6 +16,7 @@ interface NavigatorWithStandalone extends Navigator {
 }
 
 export function PWAInstallPrompt() {
+  const locale: Locale = useLocale();
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -58,9 +61,12 @@ export function PWAInstallPrompt() {
       // iOS Safari の場合
       addToast({
         type: "info",
-        title: "インストール方法",
+        title:
+          locale === "en" ? "How to install" : "インストール方法",
         message:
-          "iOS の場合: 共有ボタン → 「ホーム画面に追加」をタップしてください",
+          locale === "en"
+            ? "On iOS: Tap the Share button and choose “Add to Home Screen”."
+            : "iOS の場合: 共有ボタン → 「ホーム画面に追加」をタップしてください",
         duration: 5000,
       });
       return;
@@ -73,23 +79,32 @@ export function PWAInstallPrompt() {
       if (outcome === "accepted") {
         addToast({
           type: "success",
-          title: "インストール完了",
-          message: "DocuFlow をインストールしました！",
+          title: locale === "en" ? "Installed" : "インストール完了",
+          message:
+            locale === "en"
+              ? "DocuFlow has been installed."
+              : "DocuFlow をインストールしました！",
         });
         setIsInstalled(true);
       } else {
         addToast({
           type: "info",
-          title: "キャンセル",
-          message: "インストールをキャンセルしました",
+          title: locale === "en" ? "Canceled" : "キャンセル",
+          message:
+            locale === "en"
+              ? "Installation was canceled."
+              : "インストールをキャンセルしました",
         });
       }
     } catch (error) {
       console.error("インストールエラー:", error);
       addToast({
         type: "error",
-        title: "エラー",
-        message: "インストールに失敗しました",
+        title: locale === "en" ? "Error" : "エラー",
+        message:
+          locale === "en"
+            ? "Failed to install the app."
+            : "インストールに失敗しました",
       });
     } finally {
       setDeferredPrompt(null);
@@ -144,10 +159,14 @@ export function PWAInstallPrompt() {
           {/* Content */}
           <div className="flex-1">
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              DocuFlow をインストール
+              {locale === "en"
+                ? "Install DocuFlow"
+                : "DocuFlow をインストール"}
             </h3>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              ホーム画面に追加して、より快適にご利用いただけます
+              {locale === "en"
+                ? "Add DocuFlow to your home screen for a smoother experience."
+                : "ホーム画面に追加して、より快適にご利用いただけます"}
             </p>
 
             {/* Buttons */}
@@ -169,7 +188,7 @@ export function PWAInstallPrompt() {
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                インストール
+                {locale === "en" ? "Install" : "インストール"}
               </button>
               <button
                 onClick={handleDismiss}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, DragEvent } from "react";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 type Props = {
   inputId: string;
@@ -9,6 +11,7 @@ type Props = {
 export function NewFileDropZone({ inputId }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const locale: Locale = useLocale();
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -43,7 +46,9 @@ export function NewFileDropZone({ inputId }: Props) {
 
     if (!file.name.match(/\.(pdf|doc|docx)$/i)) {
       setFileName(
-        "PDF / Word（.pdf / .doc / .docx）のみアップロードできます。",
+        locale === "en"
+          ? "Only PDF / Word files (.pdf / .doc / .docx) can be uploaded."
+          : "PDF / Word（.pdf / .doc / .docx）のみアップロードできます。",
       );
       return;
     }
@@ -90,14 +95,19 @@ export function NewFileDropZone({ inputId }: Props) {
       }`}
     >
       <p className="font-medium">
-        クリックしてファイルを選択 / ここにドラッグ＆ドロップ
+        {locale === "en"
+          ? "Click to select a file, or drag & drop here"
+          : "クリックしてファイルを選択 / ここにドラッグ＆ドロップ"}
       </p>
       <p className="text-[10px] text-slate-500">
-        PDF / Word（.pdf / .doc / .docx / 10MB まで）をアップロードできます。
+        {locale === "en"
+          ? "You can upload PDF / Word files (.pdf / .doc / .docx) up to 10MB."
+          : "PDF / Word（.pdf / .doc / .docx / 10MB まで）をアップロードできます。"}
       </p>
       {fileName && (
         <p className="mt-1 truncate text-[10px] text-slate-500">
-          選択中: <span className="font-medium">{fileName}</span>
+          {locale === "en" ? "Selected: " : "選択中: "}
+          <span className="font-medium">{fileName}</span>
         </p>
       )}
     </div>

@@ -5,14 +5,19 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowserClient";
 import { Logo } from "@/components/Logo";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromParam } from "@/lib/i18n";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const locale: Locale = getLocaleFromParam(searchParams.get("lang") || undefined);
   const oauthErrorCode = searchParams.get("error");
   const initialError =
     oauthErrorCode === "oauth_callback"
-      ? "Google ログインに失敗しました。もう一度お試しください。"
+      ? locale === "en"
+        ? "Google login failed. Please try again."
+        : "Google ログインに失敗しました。もう一度お試しください。"
       : null;
 
   const [email, setEmail] = useState("");
@@ -38,7 +43,11 @@ function LoginForm() {
     setLoading(false);
 
     if (signInError) {
-      setError("メールアドレスまたはパスワードが正しくありません。");
+      setError(
+        locale === "en"
+          ? "The email address or password is incorrect."
+          : "メールアドレスまたはパスワードが正しくありません。"
+      );
       return;
     }
 
@@ -49,9 +58,10 @@ function LoginForm() {
       document.cookie = `docuhub_ai_user_id=${userId}; path=/;`;
     }
 
-    setStatus("ログインしました。");
+    setStatus(locale === "en" ? "You are logged in." : "ログインしました。");
 
-    const redirectTo = searchParams.get("redirectTo") || "/app";
+    const defaultRedirect = locale === "en" ? "/app?lang=en" : "/app";
+    const redirectTo = searchParams.get("redirectTo") || defaultRedirect;
     router.replace(redirectTo);
   };
 
@@ -61,7 +71,9 @@ function LoginForm() {
     setOauthLoading(true);
 
     try {
-      const redirectToParam = searchParams.get("redirectTo") || "/app";
+      const defaultRedirect =
+        locale === "en" ? "/app?lang=en" : "/app";
+      const redirectToParam = searchParams.get("redirectTo") || defaultRedirect;
       const callbackUrl =
         typeof window !== "undefined"
           ? `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(
@@ -80,7 +92,9 @@ function LoginForm() {
       if (signInError) {
         console.error("Google login error:", signInError);
         setError(
-          "Google ログインに失敗しました。少し時間をおいてからもう一度お試しください。"
+          locale === "en"
+            ? "Google login failed. Please try again in a few moments."
+            : "Google ログインに失敗しました。少し時間をおいてからもう一度お試しください。"
         );
         setOauthLoading(false);
       }
@@ -88,7 +102,9 @@ function LoginForm() {
     } catch (e) {
       console.error("Google login unexpected error:", e);
       setError(
-        "Google ログイン中に問題が発生しました。もう一度お試しください。"
+        locale === "en"
+          ? "An unexpected error occurred during Google login. Please try again."
+          : "Google ログイン中に問題が発生しました。もう一度お試しください。"
       );
       setOauthLoading(false);
     }
@@ -128,20 +144,34 @@ function LoginForm() {
             </div>
             
             <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-6">
-              AI が文書を<br />
-              <span className="text-white/90">一瞬で整理</span>
+              {locale === "en" ? (
+                <>
+                  AI organizes your
+                  <br />
+                  <span className="text-white/90">documents in seconds</span>
+                </>
+              ) : (
+                <>
+                  AI が文書を
+                  <br />
+                  <span className="text-white/90">一瞬で整理</span>
+                </>
+              )}
             </h1>
             
             <p className="text-lg text-white/80 mb-10 max-w-md leading-relaxed">
-              PDF・Word ファイルをアップロードするだけ。
-              GPT-4 が内容を要約し、タグを自動生成。
-              スマートなドキュメント管理を実現します。
+              {locale === "en"
+                ? "Just upload your PDF or Word files. GPT-4 summarizes the content, auto-generates tags, and keeps your workspace organized."
+                : "PDF・Word ファイルをアップロードするだけ。GPT-4 が内容を要約し、タグを自動生成。スマートなドキュメント管理を実現します。"}
             </p>
             
             {/* Feature Pills */}
             <div className="flex flex-wrap gap-3">
-              {["AI 自動要約", "スマートタグ", "全文検索", "共有リンク"].map((feature, i) => (
-                <span 
+              {(locale === "en"
+                ? ["AI summaries", "Smart tags", "Full-text search", "Share links"]
+                : ["AI 自動要約", "スマートタグ", "全文検索", "共有リンク"]
+              ).map((feature, i) => (
+                <span
                   key={feature}
                   className="px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full text-sm font-medium text-white border border-white/20 animate-fade-in"
                   style={{ animationDelay: `${i * 0.1}s` }}
@@ -155,8 +185,9 @@ function LoginForm() {
           {/* Testimonial */}
           <div className="mt-16 p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 animate-fade-in-up stagger-4">
             <p className="text-white/90 italic mb-4">
-              &ldquo;議事録や仕様書の整理が劇的に楽になりました。
-              AI 要約のおかげで必要な情報にすぐアクセスできます。&rdquo;
+              {locale === "en"
+                ? "“Meeting notes and specs are so much easier to manage. Thanks to AI summaries, I can jump to the right information instantly.”"
+                : "“議事録や仕様書の整理が劇的に楽になりました。AI 要約のおかげで必要な情報にすぐアクセスできます。”"}
             </p>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
@@ -174,13 +205,38 @@ function LoginForm() {
       {/* Right Side - Login Form */}
       <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
         {/* Mobile Header */}
-        <header className="lg:hidden px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+        <header className="lg:hidden px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <Logo />
+          {/* Language toggle (mobile) */}
+          <Link
+            href={
+              locale === "en"
+                ? "/auth/login"
+                : "/auth/login?lang=en"
+            }
+            className="text-[11px] font-medium text-slate-400 hover:text-slate-700 border border-slate-200 rounded-full px-2 py-0.5"
+          >
+            {locale === "en" ? "日本語" : "EN"}
+          </Link>
         </header>
 
         {/* Form Container */}
         <div className="flex-1 flex items-center justify-center px-6 py-12">
           <div className="w-full max-w-md">
+            {/* Desktop language toggle */}
+            <div className="hidden justify-end mb-4 lg:flex">
+              <Link
+                href={
+                  locale === "en"
+                    ? "/auth/login"
+                    : "/auth/login?lang=en"
+                }
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] text-slate-600 hover:bg-slate-50"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                <span>{locale === "en" ? "日本語" : "EN"}</span>
+              </Link>
+            </div>
             {/* Welcome */}
             <div className="text-center mb-10 animate-fade-in-up">
               <div className="lg:hidden flex justify-center mb-6">
@@ -189,10 +245,12 @@ function LoginForm() {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                おかえりなさい
+                {locale === "en" ? "Welcome back" : "おかえりなさい"}
               </h2>
               <p className="mt-2 text-slate-500 dark:text-slate-400">
-                アカウントにログインして続けましょう
+                {locale === "en"
+                  ? "Log in to continue to your workspace."
+                  : "アカウントにログインして続けましょう"}
               </p>
             </div>
 
@@ -223,7 +281,7 @@ function LoginForm() {
             <form onSubmit={handleLogin} className="space-y-5 animate-fade-in-up stagger-2">
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  メールアドレス
+                  {locale === "en" ? "Email address" : "メールアドレス"}
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
@@ -245,7 +303,7 @@ function LoginForm() {
 
               <div>
                 <label htmlFor="password" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  パスワード
+                  {locale === "en" ? "Password" : "パスワード"}
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
@@ -288,14 +346,18 @@ function LoginForm() {
                     className="h-4 w-4 rounded-md border-slate-300 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
                   />
                   <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
-                    ログイン状態を保持
+                    {locale === "en" ? "Keep me logged in" : "ログイン状態を保持"}
                   </span>
                 </label>
                 <Link
-                  href="/auth/forgot"
+                  href={
+                    locale === "en"
+                      ? "/auth/forgot?lang=en"
+                      : "/auth/forgot"
+                  }
                   className="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors"
                 >
-                  パスワードを忘れた？
+                  {locale === "en" ? "Forgot password?" : "パスワードを忘れた？"}
                 </Link>
               </div>
 
@@ -310,11 +372,13 @@ function LoginForm() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    <span>ログイン中...</span>
+                    <span>
+                      {locale === "en" ? "Logging in..." : "ログイン中..."}
+                    </span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span>ログイン</span>
+                    <span>{locale === "en" ? "Log in" : "ログイン"}</span>
                     <svg className="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
@@ -354,7 +418,11 @@ function LoginForm() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  <span>Google でログイン中...</span>
+                  <span>
+                    {locale === "en"
+                      ? "Logging in with Google..."
+                      : "Google でログイン中..."}
+                  </span>
                 </>
               ) : (
                 <>
@@ -364,25 +432,33 @@ function LoginForm() {
                       G
                     </span>
                   </span>
-                  <span>Google でログイン</span>
+                  <span>
+                    {locale === "en"
+                      ? "Continue with Google"
+                      : "Google でログイン"}
+                  </span>
                 </>
               )}
             </button>
 
             <p className="mb-4 text-center text-[11px] text-slate-400">
-              Google ログインではメールアドレスのみ取得し、その他の情報は保存しません。
+              {locale === "en"
+                ? "With Google login, only your email address is retrieved. No other personal data is stored."
+                : "Google ログインではメールアドレスのみ取得し、その他の情報は保存しません。"}
             </p>
 
             {/* Sign Up Link */}
-            <p className="text-center text-sm text-slate-600 dark:text-slate-400">
-              アカウントをお持ちでないですか？{" "}
-              <Link
-                href="/auth/signup"
-                className="font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors underline-offset-2 hover:underline"
-              >
-                新規登録
-              </Link>
-            </p>
+              <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+                {locale === "en"
+                  ? "Don't have an account?"
+                  : "アカウントをお持ちでないですか？"}{" "}
+                <Link
+                  href={locale === "en" ? "/auth/signup?lang=en" : "/auth/signup"}
+                  className="font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors underline-offset-2 hover:underline"
+                >
+                  {locale === "en" ? "Sign up" : "新規登録"}
+                </Link>
+              </p>
 
             {/* Trust Badges */}
             <div className="mt-10 flex items-center justify-center gap-6 text-slate-400 animate-fade-in stagger-6">
@@ -390,13 +466,13 @@ function LoginForm() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-                <span>SSL暗号化</span>
+                <span>{locale === "en" ? "SSL encryption" : "SSL暗号化"}</span>
               </div>
               <div className="flex items-center gap-1.5 text-xs">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <span>安全なログイン</span>
+                <span>{locale === "en" ? "Secure login" : "安全なログイン"}</span>
               </div>
             </div>
           </div>
@@ -405,7 +481,9 @@ function LoginForm() {
         {/* Footer */}
         <footer className="px-6 py-4 border-t border-slate-100 dark:border-slate-800">
           <p className="text-center text-xs text-slate-500 dark:text-slate-500">
-            © 2024 DocuFlow. AI 要約で、PDF / Word 資料を一瞬で整理
+            {locale === "en"
+              ? "© 2024 DocuFlow. Summarize your PDF / Word documents with AI."
+              : "© 2024 DocuFlow. AI 要約で、PDF / Word 資料を一瞬で整理"}
           </p>
         </footer>
       </div>

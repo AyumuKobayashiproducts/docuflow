@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 type Command = {
   id: string;
@@ -17,78 +19,107 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
+  const locale: Locale = useLocale();
 
-  const commands: Command[] = useMemo(() => [
-    // Navigation
-    {
-      id: "go-dashboard",
-      icon: "📄",
-      label: "ダッシュボードを開く",
-      shortcut: "G D",
-      action: () => router.push("/app"),
-      category: "navigation",
-    },
-    {
-      id: "go-new",
-      icon: "➕",
-      label: "新規ドキュメントを作成",
-      shortcut: "G N",
-      action: () => router.push("/new"),
-      category: "navigation",
-    },
-    {
-      id: "go-settings",
-      icon: "⚙️",
-      label: "設定を開く",
-      shortcut: "G S",
-      action: () => router.push("/settings"),
-      category: "navigation",
-    },
-    // Actions
-    {
-      id: "search-docs",
-      icon: "🔍",
-      label: "ドキュメントを検索",
-      shortcut: "/",
-      action: () => {
-        router.push("/app");
-        setTimeout(() => {
-          const searchInput = document.querySelector<HTMLInputElement>("#q");
-          searchInput?.focus();
-        }, 100);
+  const commands: Command[] = useMemo(
+    () => [
+      // Navigation
+      {
+        id: "go-dashboard",
+        icon: "📄",
+        label:
+          locale === "en" ? "Open dashboard" : "ダッシュボードを開く",
+        shortcut: "G D",
+        action: () => router.push(locale === "en" ? "/app?lang=en" : "/app"),
+        category: "navigation",
       },
-      category: "action",
-    },
-    {
-      id: "filter-pinned",
-      icon: "📌",
-      label: "ピン留めのみ表示",
-      action: () => router.push("/app?onlyPinned=1"),
-      category: "action",
-    },
-    {
-      id: "filter-favorites",
-      icon: "⭐",
-      label: "お気に入りのみ表示",
-      action: () => router.push("/app?onlyFavorites=1"),
-      category: "action",
-    },
-    {
-      id: "filter-archived",
-      icon: "📦",
-      label: "アーカイブを表示",
-      action: () => router.push("/app?archived=1"),
-      category: "action",
-    },
-    // Settings
-    {
-      id: "logout",
-      icon: "🚪",
-      label: "ログアウト",
-      action: () => router.push("/auth/logout"),
-      category: "settings",
-    },
-  ], [router]);
+      {
+        id: "go-new",
+        icon: "➕",
+        label:
+          locale === "en" ? "Create new document" : "新規ドキュメントを作成",
+        shortcut: "G N",
+        action: () => router.push("/new"),
+        category: "navigation",
+      },
+      {
+        id: "go-settings",
+        icon: "⚙️",
+        label:
+          locale === "en" ? "Open settings" : "設定を開く",
+        shortcut: "G S",
+        action: () =>
+          router.push(locale === "en" ? "/settings?lang=en" : "/settings"),
+        category: "navigation",
+      },
+      // Actions
+      {
+        id: "search-docs",
+        icon: "🔍",
+        label:
+          locale === "en" ? "Search documents" : "ドキュメントを検索",
+        shortcut: "/",
+        action: () => {
+          router.push(locale === "en" ? "/app?lang=en" : "/app");
+          setTimeout(() => {
+            const searchInput =
+              document.querySelector<HTMLInputElement>("#q");
+            searchInput?.focus();
+          }, 100);
+        },
+        category: "action",
+      },
+      {
+        id: "filter-pinned",
+        icon: "📌",
+        label:
+          locale === "en" ? "Show pinned only" : "ピン留めのみ表示",
+        action: () =>
+          router.push(
+            locale === "en"
+              ? "/app?onlyPinned=1&lang=en"
+              : "/app?onlyPinned=1",
+          ),
+        category: "action",
+      },
+      {
+        id: "filter-favorites",
+        icon: "⭐",
+        label:
+          locale === "en" ? "Show favorites only" : "お気に入りのみ表示",
+        action: () =>
+          router.push(
+            locale === "en"
+              ? "/app?onlyFavorites=1&lang=en"
+              : "/app?onlyFavorites=1",
+          ),
+        category: "action",
+      },
+      {
+        id: "filter-archived",
+        icon: "📦",
+        label:
+          locale === "en" ? "Show archived" : "アーカイブを表示",
+        action: () =>
+          router.push(
+            locale === "en"
+              ? "/app?archived=1&lang=en"
+              : "/app?archived=1",
+          ),
+        category: "action",
+      },
+      // Settings
+      {
+        id: "logout",
+        icon: "🚪",
+        label: locale === "en" ? "Log out" : "ログアウト",
+        action: () =>
+          router.push(locale === "en" ? "/auth/logout?lang=en" : "/auth/logout"),
+        category: "settings",
+      },
+    ],
+    [router, locale],
+  );
 
   const filteredCommands = useMemo(() => {
     return query
@@ -100,17 +131,23 @@ export function CommandPalette() {
       : commands;
   }, [query, commands]);
 
-  const groupedCommands = useMemo(() => ({
-    navigation: filteredCommands.filter((c) => c.category === "navigation"),
-    action: filteredCommands.filter((c) => c.category === "action"),
-    settings: filteredCommands.filter((c) => c.category === "settings"),
-  }), [filteredCommands]);
+  const groupedCommands = useMemo(
+    () => ({
+      navigation: filteredCommands.filter((c) => c.category === "navigation"),
+      action: filteredCommands.filter((c) => c.category === "action"),
+      settings: filteredCommands.filter((c) => c.category === "settings"),
+    }),
+    [filteredCommands],
+  );
 
-  const flatFilteredCommands = useMemo(() => [
-    ...groupedCommands.navigation,
-    ...groupedCommands.action,
-    ...groupedCommands.settings,
-  ], [groupedCommands]);
+  const flatFilteredCommands = useMemo(
+    () => [
+      ...groupedCommands.navigation,
+      ...groupedCommands.action,
+      ...groupedCommands.settings,
+    ],
+    [groupedCommands],
+  );
 
   const executeCommand = useCallback((index: number) => {
     const command = flatFilteredCommands[index];
@@ -175,9 +212,9 @@ export function CommandPalette() {
   if (!isOpen) return null;
 
   const categoryLabels = {
-    navigation: "ナビゲーション",
-    action: "アクション",
-    settings: "設定",
+    navigation: locale === "en" ? "Navigation" : "ナビゲーション",
+    action: locale === "en" ? "Actions" : "アクション",
+    settings: locale === "en" ? "Settings" : "設定",
   };
 
   return (
@@ -208,7 +245,9 @@ export function CommandPalette() {
             </svg>
             <input
               type="text"
-              placeholder="コマンドを検索..."
+              placeholder={
+                locale === "en" ? "Search commands..." : "コマンドを検索..."
+              }
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               className="flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
@@ -223,7 +262,11 @@ export function CommandPalette() {
           <div className="max-h-[60vh] overflow-y-auto p-2">
             {flatFilteredCommands.length === 0 ? (
               <div className="py-8 text-center text-sm text-slate-500">
-                <p>「{query}」に一致するコマンドが見つかりません</p>
+                <p>
+                  {locale === "en"
+                    ? `No commands found for “${query}”.`
+                    : `「${query}」に一致するコマンドが見つかりません`}
+                </p>
               </div>
             ) : (
               <>

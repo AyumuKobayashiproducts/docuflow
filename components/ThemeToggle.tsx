@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useSyncExternalStore } from "react";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 type Theme = "light" | "dark" | "system";
 
@@ -31,6 +33,7 @@ function getServerSnapshot() {
 }
 
 export function ThemeToggle() {
+  const locale: Locale = useLocale();
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== "undefined") {
@@ -69,17 +72,28 @@ export function ThemeToggle() {
     ),
   };
 
-  const labels = {
-    light: "ライト",
-    dark: "ダーク",
-    system: "システム",
-  };
+  const labels =
+    locale === "en"
+      ? {
+          light: "Light",
+          dark: "Dark",
+          system: "System",
+        }
+      : {
+          light: "ライト",
+          dark: "ダーク",
+          system: "システム",
+        };
 
   return (
     <button
       onClick={toggleTheme}
       className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:shadow dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-      title={`テーマ: ${labels[theme]}`}
+      title={
+        locale === "en"
+          ? `Theme: ${labels[theme]}`
+          : `テーマ: ${labels[theme]}`
+      }
     >
       {icons[theme]}
       <span className="hidden sm:inline text-xs">{labels[theme]}</span>

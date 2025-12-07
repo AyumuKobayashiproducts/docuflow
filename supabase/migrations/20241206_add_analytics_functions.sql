@@ -49,3 +49,4 @@ grant execute on function public.get_user_activity_counts_last_30_days(uuid)
 
 
 
+

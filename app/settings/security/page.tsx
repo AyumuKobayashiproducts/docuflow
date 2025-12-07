@@ -1,20 +1,36 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromParam } from "@/lib/i18n";
 
-export default function SecuritySettingsPage() {
+type SecuritySettingsPageProps = {
+  searchParams?: {
+    lang?: string;
+  };
+};
+
+export default function SecuritySettingsPage({
+  searchParams,
+}: SecuritySettingsPageProps) {
+  const locale: Locale = getLocaleFromParam(searchParams?.lang);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
             <Logo />
-            <p className="text-sm text-slate-600">セキュリティ設定</p>
+            <p className="text-sm text-slate-600">
+              {locale === "en" ? "Security settings" : "セキュリティ設定"}
+            </p>
           </div>
           <Link
-            href="/settings"
+            href={locale === "en" ? "/settings?lang=en" : "/settings"}
             className="text-xs text-slate-500 hover:text-slate-700"
           >
-            ← 設定トップへ戻る
+            {locale === "en"
+              ? "← Back to settings"
+              : "← 設定トップへ戻る"}
           </Link>
         </div>
       </header>
@@ -23,18 +39,25 @@ export default function SecuritySettingsPage() {
         {/* セキュリティチェックリスト */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">
-            セキュリティチェックリスト
+            {locale === "en"
+              ? "Security checklist"
+              : "セキュリティチェックリスト"}
           </h2>
           <p className="mb-4 text-xs text-slate-600">
-            DocuFlow で現在有効になっている、主なセキュリティ機能の一覧です。
-            詳細な設計や RLS ポリシーは{" "}
+            {locale === "en"
+              ? "Key security features currently enabled in DocuFlow."
+              : "DocuFlow で現在有効になっている、主なセキュリティ機能の一覧です。"}
+            {" "}
+            {locale === "en"
+              ? "For detailed design and RLS policies, see "
+              : "詳細な設計や RLS ポリシーは "}
             <Link
               href="/docs/#/security"
               className="font-medium text-emerald-600 underline-offset-2 hover:underline"
             >
               Security Design
             </Link>
-            を参照してください。
+            {locale === "en" ? "." : " を参照してください。"}
           </p>
           <ul className="space-y-2 text-xs text-slate-700">
             <li className="flex items-start gap-2">
@@ -42,10 +65,13 @@ export default function SecuritySettingsPage() {
                 ✓
               </span>
               <div>
-                <p className="font-medium">認証</p>
+                <p className="font-medium">
+                  {locale === "en" ? "Authentication" : "認証"}
+                </p>
                 <p className="text-[11px] text-slate-500">
-                  Supabase Auth によるメール &amp; パスワード / Google OAuth ログイン。
-                  Cookie ベースのセッション管理。
+                  {locale === "en"
+                    ? "Supabase Auth for email & password / Google OAuth login, with cookie-based session management."
+                    : "Supabase Auth によるメール & パスワード / Google OAuth ログイン。Cookie ベースのセッション管理。"}
                 </p>
               </div>
             </li>
@@ -56,8 +82,9 @@ export default function SecuritySettingsPage() {
               <div>
                 <p className="font-medium">RLS + RBAC</p>
                 <p className="text-[11px] text-slate-500">
-                  `documents` / `organizations` などの主要テーブルで Row Level Security を有効化。
-                  組織（owner / admin / member）ロールに基づいたアクセス制御。
+                  {locale === "en"
+                    ? "Row Level Security enabled for key tables such as `documents` and `organizations`, with access control based on organization roles (owner / admin / member)."
+                    : "`documents` / `organizations` などの主要テーブルで Row Level Security を有効化。組織（owner / admin / member）ロールに基づいたアクセス制御。"}
                 </p>
               </div>
             </li>
@@ -66,10 +93,13 @@ export default function SecuritySettingsPage() {
                 ✓
               </span>
               <div>
-                <p className="font-medium">共有リンク</p>
+                <p className="font-medium">
+                  {locale === "en" ? "Share links" : "共有リンク"}
+                </p>
                 <p className="text-[11px] text-slate-500">
-                  UUID ベースの `share_token` により閲覧専用リンクを発行。いつでも無効化可能で、
-                  編集は常に認証済みユーザーのみ。
+                  {locale === "en"
+                    ? "UUID-based `share_token` for view-only links that can be revoked at any time; edits are always restricted to authenticated users."
+                    : "UUID ベースの `share_token` により閲覧専用リンクを発行。いつでも無効化可能で、編集は常に認証済みユーザーのみ。"}
                 </p>
               </div>
             </li>
@@ -78,9 +108,13 @@ export default function SecuritySettingsPage() {
                 ✓
               </span>
               <div>
-                <p className="font-medium">監査ログ &amp; 通知</p>
+                <p className="font-medium">
+                  {locale === "en" ? "Audit logs & notifications" : "監査ログ & 通知"}
+                </p>
                 <p className="text-[11px] text-slate-500">
-                  主要な操作は `activity_logs` に記録され、コメントやメンションは通知ベルから参照可能。
+                  {locale === "en"
+                    ? "Key actions are recorded in `activity_logs`, and comments / mentions are surfaced via the notification bell."
+                    : "主要な操作は `activity_logs` に記録され、コメントやメンションは通知ベルから参照可能。"}
                 </p>
               </div>
             </li>
@@ -89,9 +123,15 @@ export default function SecuritySettingsPage() {
                 ✓
               </span>
               <div>
-                <p className="font-medium">レートリミット &amp; Web Vitals</p>
+                <p className="font-medium">
+                  {locale === "en"
+                    ? "Rate limiting & Web Vitals"
+                    : "レートリミット & Web Vitals"}
+                </p>
                 <p className="text-[11px] text-slate-500">
-                  API には簡易レートリミットを実装し、`/app/vitals` ページでパフォーマンス指標を可視化。
+                  {locale === "en"
+                    ? "Simple rate limiting on APIs, with performance metrics visualized on the `/app/vitals` page."
+                    : "API には簡易レートリミットを実装し、`/app/vitals` ページでパフォーマンス指標を可視化。"}
                 </p>
               </div>
             </li>

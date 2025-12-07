@@ -1,31 +1,88 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import type { Locale } from "@/lib/i18n";
+import { useLocale } from "@/lib/useLocale";
 
 type Shortcut = {
   keys: string[];
-  description: string;
+  description: (locale: Locale) => string;
   category: "navigation" | "action" | "document";
 };
 
 const shortcuts: Shortcut[] = [
   // Navigation
-  { keys: ["⌘", "K"], description: "コマンドパレットを開く", category: "navigation" },
-  { keys: ["G", "D"], description: "ダッシュボードへ移動", category: "navigation" },
-  { keys: ["G", "N"], description: "新規作成ページへ移動", category: "navigation" },
-  { keys: ["G", "S"], description: "設定ページへ移動", category: "navigation" },
+  {
+    keys: ["⌘", "K"],
+    description: (locale) =>
+      locale === "en" ? "Open command palette" : "コマンドパレットを開く",
+    category: "navigation",
+  },
+  {
+    keys: ["G", "D"],
+    description: (locale) =>
+      locale === "en" ? "Go to dashboard" : "ダッシュボードへ移動",
+    category: "navigation",
+  },
+  {
+    keys: ["G", "N"],
+    description: (locale) =>
+      locale === "en"
+        ? "Go to new document page"
+        : "新規作成ページへ移動",
+    category: "navigation",
+  },
+  {
+    keys: ["G", "S"],
+    description: (locale) =>
+      locale === "en" ? "Go to settings" : "設定ページへ移動",
+    category: "navigation",
+  },
   // Actions
-  { keys: ["/"], description: "検索にフォーカス", category: "action" },
-  { keys: ["?"], description: "ショートカットヘルプを表示", category: "action" },
-  { keys: ["Esc"], description: "モーダルを閉じる", category: "action" },
+  {
+    keys: ["/"],
+    description: (locale) =>
+      locale === "en" ? "Focus search" : "検索にフォーカス",
+    category: "action",
+  },
+  {
+    keys: ["?"],
+    description: (locale) =>
+      locale === "en"
+        ? "Toggle shortcut help"
+        : "ショートカットヘルプを表示",
+    category: "action",
+  },
+  {
+    keys: ["Esc"],
+    description: (locale) =>
+      locale === "en" ? "Close modals" : "モーダルを閉じる",
+    category: "action",
+  },
   // Document
-  { keys: ["Shift", "D"], description: "ドキュメントを削除", category: "document" },
-  { keys: ["P"], description: "ピン留めを切り替え", category: "document" },
-  { keys: ["F"], description: "お気に入りを切り替え", category: "document" },
+  {
+    keys: ["Shift", "D"],
+    description: (locale) =>
+      locale === "en" ? "Delete focused card" : "ドキュメントを削除",
+    category: "document",
+  },
+  {
+    keys: ["P"],
+    description: (locale) =>
+      locale === "en" ? "Toggle pin" : "ピン留めを切り替え",
+    category: "document",
+  },
+  {
+    keys: ["F"],
+    description: (locale) =>
+      locale === "en" ? "Toggle favorite" : "お気に入りを切り替え",
+    category: "document",
+  },
 ];
 
 export function KeyboardShortcutsHelp() {
   const [isOpen, setIsOpen] = useState(false);
+  const locale: Locale = useLocale();
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "?" && !e.metaKey && !e.ctrlKey) {
@@ -48,9 +105,9 @@ export function KeyboardShortcutsHelp() {
   if (!isOpen) return null;
 
   const categoryLabels = {
-    navigation: "ナビゲーション",
-    action: "アクション",
-    document: "ドキュメント操作",
+    navigation: locale === "en" ? "Navigation" : "ナビゲーション",
+    action: locale === "en" ? "Actions" : "アクション",
+    document: locale === "en" ? "Document actions" : "ドキュメント操作",
   };
 
   const groupedShortcuts = {
@@ -77,8 +134,16 @@ export function KeyboardShortcutsHelp() {
                 ⌨️
               </div>
               <div>
-                <h2 className="font-semibold text-slate-900">キーボードショートカット</h2>
-                <p className="text-xs text-slate-500">効率的に操作できます</p>
+                <h2 className="font-semibold text-slate-900">
+                  {locale === "en"
+                    ? "Keyboard shortcuts"
+                    : "キーボードショートカット"}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {locale === "en"
+                    ? "Operate DocuFlow more efficiently."
+                    : "効率的に操作できます"}
+                </p>
               </div>
             </div>
             <button
@@ -104,7 +169,9 @@ export function KeyboardShortcutsHelp() {
                       key={i}
                       className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-2.5"
                     >
-                      <span className="text-sm text-slate-700">{shortcut.description}</span>
+                      <span className="text-sm text-slate-700">
+                        {shortcut.description(locale)}
+                      </span>
                       <div className="flex items-center gap-1">
                         {shortcut.keys.map((key, j) => (
                           <span key={j}>
@@ -130,7 +197,11 @@ export function KeyboardShortcutsHelp() {
               <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px]">
                 ?
               </kbd>
-              <span className="ml-2">を押すといつでもこのヘルプを表示できます</span>
+              <span className="ml-2">
+                {locale === "en"
+                  ? "Press this key at any time to open this help."
+                  : "を押すといつでもこのヘルプを表示できます"}
+              </span>
             </p>
           </div>
         </div>
@@ -138,6 +209,7 @@ export function KeyboardShortcutsHelp() {
     </>
   );
 }
+
 
 
 
