@@ -12,3 +12,5 @@ comment on column public.organizations.stripe_subscription_id is 'Stripe 上の 
 comment on column public.organizations.billing_email is '請求先メールアドレス（Stripe Checkout で入力されたもの）';
 
 
+
+

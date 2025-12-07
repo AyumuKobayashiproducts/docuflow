@@ -67,3 +67,6 @@ jobs:
           echo ""
           echo "※ 実際のスコアは Lighthouse CI の Artifacts を確認してください。"
 
+
+
+

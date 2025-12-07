@@ -60,3 +60,6 @@
   <p>Made with ❤️ using Next.js, Supabase & OpenAI</p>
 </div>
 
+
+
+

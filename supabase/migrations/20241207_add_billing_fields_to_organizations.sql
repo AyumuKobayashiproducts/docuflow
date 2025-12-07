@@ -14,3 +14,5 @@ comment on column public.organizations.seat_limit is '組織内の最大メン�
 comment on column public.organizations.document_limit is '組織内で作成可能なドキュメント数の上限（null の場合は無制限）';
 
 
+
+

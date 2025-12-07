@@ -1,10 +1,10 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { useEffect, useState } from "react";
 
-type ToastType = "success" | "error" | "info" | "warning";
+export type ToastType = "success" | "error" | "info" | "warning";
 
-type Toast = {
+export type ToastMessage = {
   id: string;
   type: ToastType;
   title: string;
@@ -12,139 +12,104 @@ type Toast = {
   duration?: number;
 };
 
-type ToastContextType = {
-  toasts: Toast[];
-  addToast: (toast: Omit<Toast, "id">) => void;
-  removeToast: (id: string) => void;
+type ToastProps = {
+  toast: ToastMessage;
+  onClose: (id: string) => void;
 };
 
-const ToastContext = createContext<ToastContextType | null>(null);
+function Toast({ toast, onClose }: ToastProps) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose(toast.id);
+    }, toast.duration || 5000);
 
-export function useToast() {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
-  }
-  return context;
-}
+    return () => clearTimeout(timer);
+  }, [toast.id, toast.duration, onClose]);
 
-export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<Toast[]>([]);
-
-  const addToast = useCallback((toast: Omit<Toast, "id">) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    const newToast = { ...toast, id };
-    
-    setToasts((prev) => [...prev, newToast]);
-
-    // Auto remove after duration
-    const duration = toast.duration ?? 5000;
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, duration);
-  }, []);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
-      {children}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
-    </ToastContext.Provider>
-  );
-}
-
-function ToastContainer({
-  toasts,
-  removeToast,
-}: {
-  toasts: Toast[];
-  removeToast: (id: string) => void;
-}) {
-  if (toasts.length === 0) return null;
-
-  return (
-    <div className="fixed bottom-4 right-4 z-[200] flex flex-col gap-2">
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
-      ))}
-    </div>
-  );
-}
-
-function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
-  const icons: Record<ToastType, string> = {
-    success: "✓",
-    error: "✕",
-    info: "ℹ",
-    warning: "⚠",
+  const icons = {
+    success: "✅",
+    error: "❌",
+    info: "ℹ️",
+    warning: "⚠️",
   };
 
-  const styles: Record<ToastType, string> = {
-    success: "bg-emerald-50 border-emerald-200 text-emerald-800",
-    error: "bg-red-50 border-red-200 text-red-800",
-    info: "bg-sky-50 border-sky-200 text-sky-800",
-    warning: "bg-amber-50 border-amber-200 text-amber-800",
-  };
-
-  const iconStyles: Record<ToastType, string> = {
-    success: "bg-emerald-500 text-white",
-    error: "bg-red-500 text-white",
-    info: "bg-sky-500 text-white",
-    warning: "bg-amber-500 text-white",
+  const styles = {
+    success: "bg-emerald-50 border-emerald-200 text-emerald-900",
+    error: "bg-red-50 border-red-200 text-red-900",
+    info: "bg-blue-50 border-blue-200 text-blue-900",
+    warning: "bg-amber-50 border-amber-200 text-amber-900",
   };
 
   return (
     <div
-      className={`flex items-start gap-3 rounded-xl border p-4 shadow-lg animate-slide-in-right min-w-[320px] max-w-[420px] ${styles[toast.type]}`}
+      className={`flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg animate-fade-in-scale ${styles[toast.type]}`}
       role="alert"
+      aria-live="polite"
     >
-      <div
-        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${iconStyles[toast.type]}`}
-      >
-        {icons[toast.type]}
-      </div>
+      <span className="text-lg">{icons[toast.type]}</span>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm">{toast.title}</p>
+        <p className="text-sm font-semibold">{toast.title}</p>
         {toast.message && (
-          <p className="mt-0.5 text-xs opacity-80">{toast.message}</p>
+          <p className="mt-1 text-xs opacity-90">{toast.message}</p>
         )}
       </div>
       <button
-        onClick={onClose}
-        className="flex-shrink-0 rounded-full p-1 hover:bg-black/5 transition-colors"
+        onClick={() => onClose(toast.id)}
+        className="text-lg opacity-50 hover:opacity-100 transition-opacity"
         aria-label="閉じる"
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        ×
       </button>
     </div>
   );
 }
 
-// Standalone toast functions for server actions
-export function showSuccessToast(title: string, message?: string) {
-  // This will be handled by client-side event
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent("toast", {
-        detail: { type: "success", title, message },
-      })
-    );
-  }
+type ToastContainerProps = {
+  toasts: ToastMessage[];
+  onClose: (id: string) => void;
+};
+
+export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
+  return (
+    <div className="fixed bottom-4 right-4 z-[200] flex flex-col gap-3 max-w-md pointer-events-none">
+      {toasts.map((toast) => (
+        <div key={toast.id} className="pointer-events-auto">
+          <Toast toast={toast} onClose={onClose} />
+        </div>
+      ))}
+    </div>
+  );
 }
 
-export function showErrorToast(title: string, message?: string) {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent("toast", {
-        detail: { type: "error", title, message },
-      })
-    );
-  }
+// Toast管理用のカスタムフック
+export function useToast() {
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const showToast = (
+    type: ToastType,
+    title: string,
+    message?: string,
+    duration?: number
+  ) => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    const newToast: ToastMessage = { id, type, title, message, duration };
+    setToasts((prev) => [...prev, newToast]);
+  };
+
+  const closeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  return {
+    toasts,
+    showToast,
+    closeToast,
+    success: (title: string, message?: string) =>
+      showToast("success", title, message),
+    error: (title: string, message?: string) =>
+      showToast("error", title, message),
+    info: (title: string, message?: string) => showToast("info", title, message),
+    warning: (title: string, message?: string) =>
+      showToast("warning", title, message),
+  };
 }
-
-

@@ -231,3 +231,6 @@ GRANT EXECUTE ON FUNCTION get_unread_notification_count() TO authenticated;
 -- RLS ポリシーを確認
 -- SELECT tablename, policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = 'notifications';
 
+
+
+
