@@ -9,10 +9,16 @@ import { Logo } from "@/components/Logo";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const oauthErrorCode = searchParams.get("error");
+  const initialError =
+    oauthErrorCode === "oauth_callback"
+      ? "Google ログインに失敗しました。もう一度お試しください。"
+      : null;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -325,7 +331,7 @@ function LoginForm() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={oauthLoading}
-              className="btn btn-secondary w-full h-12 mb-4 flex items-center justify-center gap-2"
+              className="btn btn-secondary w-full h-12 mb-2 flex items-center justify-center gap-2"
             >
               {oauthLoading ? (
                 <>
@@ -362,6 +368,10 @@ function LoginForm() {
                 </>
               )}
             </button>
+
+            <p className="mb-4 text-center text-[11px] text-slate-400">
+              Google ログインではメールアドレスのみ取得し、その他の情報は保存しません。
+            </p>
 
             {/* Sign Up Link */}
             <p className="text-center text-sm text-slate-600 dark:text-slate-400">

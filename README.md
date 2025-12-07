@@ -10,10 +10,10 @@
 
 <br />
 
-[![CI](https://img.shields.io/github/actions/workflow/status/hashimotonobuaki123-cmyk/docuflow/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI)](https://github.com/hashimotonobuaki123-cmyk/docuflow/actions)
-[![Lighthouse](https://img.shields.io/github/actions/workflow/status/hashimotonobuaki123-cmyk/docuflow/lighthouse.yml?branch=main&style=for-the-badge&logo=lighthouse&logoColor=white&label=Lighthouse)](https://github.com/hashimotonobuaki123-cmyk/docuflow/actions/workflows/lighthouse.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/AyumuKobayashiproducts/docuflow/ci.yml?branch=main&style=for-the-badge&logo=github&label=CI)](https://github.com/AyumuKobayashiproducts/docuflow/actions)
+[![Lighthouse](https://img.shields.io/github/actions/workflow/status/AyumuKobayashiproducts/docuflow/lighthouse.yml?branch=main&style=for-the-badge&logo=lighthouse&logoColor=white&label=Lighthouse)](https://github.com/AyumuKobayashiproducts/docuflow/actions/workflows/lighthouse.yml)
 [![Playwright](https://img.shields.io/badge/Playwright-E2E_Tests-45ba4b?style=for-the-badge&logo=playwright&logoColor=white)](https://playwright.dev/)
-[![codecov](https://img.shields.io/codecov/c/github/hashimotonobuaki123-cmyk/docuflow?style=for-the-badge&logo=codecov&logoColor=white)](https://codecov.io/gh/hashimotonobuaki123-cmyk/docuflow)
+[![codecov](https://img.shields.io/codecov/c/github/AyumuKobayashiproducts/docuflow?style=for-the-badge&logo=codecov&logoColor=white)](https://codecov.io/gh/AyumuKobayashiproducts/docuflow)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
@@ -28,7 +28,7 @@
 <br />
 <br />
 
-[**📖 Docs**](docs/) &nbsp;&nbsp;·&nbsp;&nbsp; [**🐛 Bug Report**](https://github.com/hashimotonobuaki123-cmyk/docuflow/issues) &nbsp;&nbsp;·&nbsp;&nbsp; [**✨ Feature Request**](https://github.com/hashimotonobuaki123-cmyk/docuflow/issues)
+[**📖 Docs**](docs/) &nbsp;&nbsp;·&nbsp;&nbsp; [**🐛 Bug Report**](https://github.com/AyumuKobayashiproducts/docuflow/issues) &nbsp;&nbsp;·&nbsp;&nbsp; [**✨ Feature Request**](https://github.com/AyumuKobayashiproducts/docuflow/issues)
 
 <br />
 
@@ -146,27 +146,20 @@ PDF・Word ファイルをドラッグ＆ドロップ。`pdf-parse` / `mammoth` 
 </td>
 <td width="33%" valign="top">
 
+### 🔐 Authentication
+
+メールアドレス & パスワードに加えて、Google OAuth ログインをサポート。Supabase Auth で安全にトークン管理。
+
+</td>
+<td width="33%" valign="top">
+
 ### 🔗 One-Click Share
 
 共有リンクをワンクリックで発行。認証不要で閲覧可能な公開ビュー。いつでも停止可能。
 
 </td>
-<td width="33%" valign="top">
-
-### 📝 Version History
-
-編集履歴を自動保存。過去バージョンをいつでも確認でき、変更の追跡が容易に。
-
-</td>
 </tr>
 <tr>
-<td width="33%" valign="top">
-
-### ⌨️ Command Palette
-
-`⌘K` で開くコマンドパレット。Notion/Linear風のモダンなナビゲーションを実現。
-
-</td>
 <td width="33%" valign="top">
 
 ### 🌙 Dark Mode
@@ -179,6 +172,13 @@ PDF・Word ファイルをドラッグ＆ドロップ。`pdf-parse` / `mammoth` 
 ### 🔔 Toast Notifications
 
 操作結果をリアルタイム通知。成功・エラー・警告を美しいトーストで表示。
+
+</td>
+<td width="33%" valign="top">
+
+### 📝 Version History
+
+編集履歴を自動保存。過去バージョンをいつでも確認でき、変更の追跡が容易に。
 
 </td>
 </tr>

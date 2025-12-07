@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { AccountInfoCard } from "@/components/AccountInfoCard";
 import { DeleteAccountSection } from "../app/DeleteAccountSection";
 import { deleteAccount } from "../app/accountActions";
 
@@ -16,6 +17,8 @@ export default function SettingsPage() {
       </header>
 
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
+        <AccountInfoCard />
+
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">
             設定メニュー

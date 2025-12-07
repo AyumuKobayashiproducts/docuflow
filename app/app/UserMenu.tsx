@@ -8,15 +8,25 @@ export function UserMenu() {
   const [open, setOpen] = useState(false);
   const [initial, setInitial] = useState<string>("U");
   const [email, setEmail] = useState<string>("");
+  const [provider, setProvider] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     supabaseBrowser.auth.getUser().then(({ data }) => {
       if (!active) return;
       const userEmail = data.user?.email ?? "";
+      const metaProvider =
+        // @ts-expect-error app_metadata is provided by Supabase User
+        (data.user?.app_metadata?.provider as string | undefined) ??
+        // @ts-expect-error identities is provided by Supabase User
+        (data.user?.identities?.[0]?.provider as string | undefined);
+
       if (userEmail) {
         setInitial(userEmail.charAt(0).toUpperCase());
         setEmail(userEmail);
+      }
+      if (metaProvider) {
+        setProvider(metaProvider);
       }
     });
     return () => {
@@ -46,6 +56,13 @@ export function UserMenu() {
               </p>
               {email && (
                 <p className="truncate text-[11px] text-slate-500">{email}</p>
+              )}
+              {provider && (
+                <p className="mt-0.5 text-[10px] text-emerald-600">
+                  {provider === "google"
+                    ? "Google でログイン中"
+                    : "メールアドレスでログイン中"}
+                </p>
               )}
             </div>
           </div>
