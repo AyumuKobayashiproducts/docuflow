@@ -16,6 +16,9 @@ import { NewFileDropZone } from "@/components/NewFileDropZone";
 import type { Locale } from "@/lib/i18n";
 import { getLocaleFromParam } from "@/lib/i18n";
 
+// 検索クエリ (?lang=en) によって内容が変わるため、静的生成ではなく毎回評価する
+export const dynamic = "force-dynamic";
+
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
 async function extractTextFromFile(file: File): Promise<string> {
