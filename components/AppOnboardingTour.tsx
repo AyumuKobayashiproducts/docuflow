@@ -66,13 +66,28 @@ export function AppOnboardingTour() {
                   : "新規ドキュメントを1つ作ってみる"}
               </span>{" "}
               —{" "}
-              <Link
-                href={locale === "en" ? "/new?lang=en" : "/new"}
-                className="font-semibold text-emerald-700 underline-offset-2 hover:underline"
-              >
-                /new
-              </Link>{" "}
-              からファイルをアップロード
+              {locale === "en" ? (
+                <>
+                  Go to{" "}
+                  <Link
+                    href="/new?lang=en"
+                    className="font-semibold text-emerald-700 underline-offset-2 hover:underline"
+                  >
+                    /new
+                  </Link>{" "}
+                  and upload a file
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/new"
+                    className="font-semibold text-emerald-700 underline-offset-2 hover:underline"
+                  >
+                    /new
+                  </Link>{" "}
+                  からファイルをアップロード
+                </>
+              )}
             </li>
           </ol>
         </div>
