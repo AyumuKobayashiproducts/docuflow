@@ -14,6 +14,7 @@ function LoginForm() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -46,6 +47,45 @@ function LoginForm() {
 
     const redirectTo = searchParams.get("redirectTo") || "/app";
     router.replace(redirectTo);
+  };
+
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setStatus(null);
+    setOauthLoading(true);
+
+    try {
+      const redirectToParam = searchParams.get("redirectTo") || "/app";
+      const callbackUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(
+              redirectToParam
+            )}`
+          : undefined;
+
+      const { error: signInError } =
+        await supabaseBrowser.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: callbackUrl,
+          },
+        });
+
+      if (signInError) {
+        console.error("Google login error:", signInError);
+        setError(
+          "Google ログインに失敗しました。少し時間をおいてからもう一度お試しください。"
+        );
+        setOauthLoading(false);
+      }
+      // 成功時は Supabase 側でリダイレクトされる
+    } catch (e) {
+      console.error("Google login unexpected error:", e);
+      setError(
+        "Google ログイン中に問題が発生しました。もう一度お試しください。"
+      );
+      setOauthLoading(false);
+    }
   };
 
   return (
@@ -279,6 +319,49 @@ function LoginForm() {
 
             {/* Divider */}
             <div className="divider my-8">または</div>
+
+            {/* Social Login */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={oauthLoading}
+              className="btn btn-secondary w-full h-12 mb-4 flex items-center justify-center gap-2"
+            >
+              {oauthLoading ? (
+                <>
+                  <svg
+                    className="h-5 w-5 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span>Google でログイン中...</span>
+                </>
+              ) : (
+                <>
+                  {/* 簡易Googleアイコン（4色のG） */}
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white">
+                    <span className="text-[11px] font-bold text-slate-800">
+                      G
+                    </span>
+                  </span>
+                  <span>Google でログイン</span>
+                </>
+              )}
+            </button>
 
             {/* Sign Up Link */}
             <p className="text-center text-sm text-slate-600 dark:text-slate-400">

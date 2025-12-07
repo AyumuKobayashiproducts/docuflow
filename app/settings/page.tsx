@@ -70,6 +70,36 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-2 text-sm font-semibold text-slate-900">
+            ログアウト
+          </h2>
+          <p className="text-xs text-slate-600">
+            すべての端末から DocuFlow のセッションを終了します。再度利用するには、ログインページからサインインしてください。
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/auth/logout"
+              className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 ring-1 ring-red-200 hover:bg-red-100"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"
+                />
+              </svg>
+              <span>ログアウトする</span>
+            </Link>
+          </div>
+        </section>
+
         <DeleteAccountSection deleteAccount={deleteAccount} />
       </main>
     </div>

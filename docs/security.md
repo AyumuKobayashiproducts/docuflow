@@ -17,12 +17,16 @@ DocuFlow のセキュリティ方針と実装の要点をまとめます。
 
 ### 2.1 認証 (Authentication)
 
-- **プロバイダ**: Supabase Auth（メール & パスワード）
-- フロー:
+- **プロバイダ**: Supabase Auth（メール & パスワード / Google OAuth）
+- フロー（メール & パスワード）:
   1. `/auth/login` でメール & パスワードを送信
   2. Supabase Auth がトークンを発行
   3. クライアント側で `docuhub_ai_auth=1` / `docuhub_ai_user_id=<uuid>` を Cookie に保存
   4. `middleware.ts` で Cookie を参照し、保護ルートへのアクセスを制御
+- フロー（Google ログイン）:
+  1. `/auth/login` の「Google でログイン」ボタンから `supabase.auth.signInWithOAuth('google')` を実行
+  2. Supabase が Google OAuth で認証し、コールバックでトークンを発行
+  3. メール & パスワードと同様に Cookie を設定し、`/app` へリダイレクト
 
 ### 2.2 認可 (Authorization)
 
