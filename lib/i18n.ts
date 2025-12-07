@@ -87,7 +87,7 @@ export function t(locale: Locale, key: TranslationKey): string {
 }
 
 export function getLocaleFromParam(lang: string | undefined): Locale {
-  // "en" だけでなく "en=", "en-US" など "en" で始まる値も英語として扱う
-  if (!lang) return "ja";
-  return lang.toLowerCase().startsWith("en") ? "en" : "ja";
+  // クエリに ?lang= が付いていれば「英語モード」とみなし、
+  // 何も付いていなければ日本語モードとするシンプルなルール
+  return lang ? "en" as Locale : "ja";
 }
