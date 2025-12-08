@@ -7,6 +7,8 @@ import { deleteAccount } from "../app/accountActions";
 import type { Locale } from "@/lib/i18n";
 import { getLocaleFromParam } from "@/lib/i18n";
 
+export const dynamic = "force-dynamic";
+
 type SettingsPageProps = {
   searchParams: Promise<{
     lang?: string;

@@ -5,6 +5,8 @@ import { Logo } from "@/components/Logo";
 import type { Locale } from "@/lib/i18n";
 import { getLocaleFromParam } from "@/lib/i18n";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{
     token: string;
