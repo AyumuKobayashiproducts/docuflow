@@ -730,7 +730,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
                       )}
 
                       {/* Tags */}
-                      {doc.tags && doc.tags.length > 0 && (
+                      {Array.isArray(doc.tags) && doc.tags.length > 0 && (
                         <div className="mb-4 flex flex-wrap gap-1.5">
                           {doc.tags.slice(0, 4).map((tag) => (
                             <Link
