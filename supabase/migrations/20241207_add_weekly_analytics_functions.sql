@@ -29,3 +29,4 @@ grant execute on function public.get_weekly_document_counts_last_8_weeks(uuid)
 
 
 
+
