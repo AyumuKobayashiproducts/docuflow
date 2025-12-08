@@ -309,31 +309,58 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     const onlyPinned = params?.onlyPinned === "1";
     const showArchived = params?.archived === "1";
 
-    const cookieStore = await cookies();
+    let cookieStore;
+    try {
+      cookieStore = await cookies();
+    } catch (cookieError) {
+      console.error("[Dashboard] cookies() error:", cookieError);
+      throw new Error("Failed to access cookies");
+    }
     const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
 
-    // Organization data
-    const memberships = userId ? await getUserOrganizations(userId) : [];
+    // Organization data - with defensive try/catch
+    let memberships: Awaited<ReturnType<typeof getUserOrganizations>> = [];
+    let activeOrgId: string | null = null;
+    try {
+      memberships = userId ? await getUserOrganizations(userId) : [];
+      activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
+    } catch (orgError) {
+      console.error("[Dashboard] organization fetch error:", orgError);
+      // Continue with empty organizations
+    }
     const organizations = memberships.map((m) => ({ organization: m.organization, role: m.role }));
-    const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
 
-    // Notifications
+    // Notifications - with defensive try/catch
     let notifications: Notification[] = [];
     let unreadCount = 0;
     if (userId) {
-      notifications = await getUserNotifications(userId, 10, false);
-      unreadCount = await getUnreadNotificationCount(userId);
+      try {
+        notifications = await getUserNotifications(userId, 10, false);
+        unreadCount = await getUnreadNotificationCount(userId);
+      } catch (notifError) {
+        console.error("[Dashboard] notification fetch error:", notifError);
+        // Continue with empty notifications
+      }
     }
 
-    // Documents query
-    let documentsQuery = supabase.from("documents").select("*").order("created_at", { ascending: sort === "asc" });
-    if (userId) documentsQuery = documentsQuery.eq("user_id", userId);
-    if (activeOrgId) documentsQuery = documentsQuery.eq("organization_id", activeOrgId);
-    documentsQuery = documentsQuery.eq("is_archived", showArchived);
-    const { data, error } = await documentsQuery;
-    if (error) console.error(error);
+    // Documents query - with defensive try/catch
+    let data: Document[] | null = null;
+    try {
+      let documentsQuery = supabase.from("documents").select("*").order("created_at", { ascending: sort === "asc" });
+      if (userId) documentsQuery = documentsQuery.eq("user_id", userId);
+      if (activeOrgId) documentsQuery = documentsQuery.eq("organization_id", activeOrgId);
+      documentsQuery = documentsQuery.eq("is_archived", showArchived);
+      const result = await documentsQuery;
+      if (result.error) {
+        console.error("[Dashboard] documents query error:", result.error);
+      }
+      data = result.data as Document[] | null;
+    } catch (docError) {
+      console.error("[Dashboard] documents fetch error:", docError);
+      data = [];
+    }
 
-    const allDocuments = ((data as Document[]) ?? []).filter((doc) => (userId ? doc.user_id === userId : true));
+    const allDocuments = ((data ?? []) as Document[]).filter((doc) => (userId ? doc.user_id === userId : true));
     const categories = Array.from(new Set(allDocuments.map((doc) => doc.category).filter((c): c is string => !!c && c.length > 0))).sort((a, b) =>
       a.localeCompare(b, "ja")
     );
@@ -345,16 +372,21 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
       return sort === "asc" ? aTime - bTime : bTime - aTime;
     });
 
-    // Activity logs
+    // Activity logs - with defensive try/catch
     let recentActivities: ActivityLog[] = [];
     if (userId) {
-      const { data: activityData, error: activityError } = await supabase
-        .from("activity_logs")
-        .select("id, action, document_id, document_title, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(8);
-      if (!activityError && activityData) recentActivities = activityData as ActivityLog[];
+      try {
+        const { data: activityData, error: activityError } = await supabase
+          .from("activity_logs")
+          .select("id, action, document_id, document_title, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(8);
+        if (!activityError && activityData) recentActivities = activityData as ActivityLog[];
+      } catch (activityFetchError) {
+        console.error("[Dashboard] activity logs fetch error:", activityFetchError);
+        // Continue with empty activities
+      }
     }
 
     // Stats
@@ -366,26 +398,32 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     const createdLast30Days = countDocumentsCreatedLast30Days(allDocuments);
     const lastActivityAt = recentActivities.length > 0 ? formatJstDateTime(recentActivities[0].created_at as string) : null;
 
-    // Similar search
+    // Similar search - with defensive try/catch
     let similarDocuments: SimilarDocument[] = [];
     if (query && query.length >= 2) {
       try {
         similarDocuments = await searchSimilarDocuments(query, userId, 0.5, 5);
-      } catch {
+      } catch (similarError) {
+        console.error("[Dashboard] similar search error:", similarError);
         // Silently fail
       }
     }
 
-    // Comment counts
+    // Comment counts - with defensive try/catch
     const commentCountMap = new Map<string, number>();
     if (allDocuments.length > 0) {
-      const documentIds = allDocuments.map((d) => d.id);
-      const { data: comments } = await supabase.from("document_comments").select("document_id").in("document_id", documentIds);
-      if (comments) {
-        for (const row of comments as { document_id: string | null }[]) {
-          if (!row.document_id) continue;
-          commentCountMap.set(row.document_id, (commentCountMap.get(row.document_id) ?? 0) + 1);
+      try {
+        const documentIds = allDocuments.map((d) => d.id);
+        const { data: comments } = await supabase.from("document_comments").select("document_id").in("document_id", documentIds);
+        if (comments) {
+          for (const row of comments as { document_id: string | null }[]) {
+            if (!row.document_id) continue;
+            commentCountMap.set(row.document_id, (commentCountMap.get(row.document_id) ?? 0) + 1);
+          }
         }
+      } catch (commentError) {
+        console.error("[Dashboard] comment counts fetch error:", commentError);
+        // Continue with empty comment counts
       }
     }
 
