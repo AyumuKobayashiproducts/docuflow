@@ -300,96 +300,99 @@ type DashboardProps = {
 
 export default async function Dashboard({ searchParams }: DashboardProps) {
   const params = await searchParams;
-  const query = params?.q ?? "";
-  const category = params?.category ?? "";
-  const sort = params?.sort === "asc" ? "asc" : "desc";
-  const onlyFavorites = params?.onlyFavorites === "1";
-  const onlyPinned = params?.onlyPinned === "1";
-  const showArchived = params?.archived === "1";
   const locale: Locale = getLocaleFromParam(params?.lang);
+  try {
+    const query = params?.q ?? "";
+    const category = params?.category ?? "";
+    const sort = params?.sort === "asc" ? "asc" : "desc";
+    const onlyFavorites = params?.onlyFavorites === "1";
+    const onlyPinned = params?.onlyPinned === "1";
+    const showArchived = params?.archived === "1";
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
 
-  // Organization data
-  const memberships = userId ? await getUserOrganizations(userId) : [];
-  const organizations = memberships.map((m) => ({ organization: m.organization, role: m.role }));
-  const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
+    // Organization data
+    const memberships = userId ? await getUserOrganizations(userId) : [];
+    const organizations = memberships.map((m) => ({ organization: m.organization, role: m.role }));
+    const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
 
-  // Notifications
-  let notifications: Notification[] = [];
-  let unreadCount = 0;
-  if (userId) {
-    notifications = await getUserNotifications(userId, 10, false);
-    unreadCount = await getUnreadNotificationCount(userId);
-  }
-
-  // Documents query
-  let documentsQuery = supabase.from("documents").select("*").order("created_at", { ascending: sort === "asc" });
-  if (userId) documentsQuery = documentsQuery.eq("user_id", userId);
-  if (activeOrgId) documentsQuery = documentsQuery.eq("organization_id", activeOrgId);
-  documentsQuery = documentsQuery.eq("is_archived", showArchived);
-  const { data, error } = await documentsQuery;
-  if (error) console.error(error);
-
-  const allDocuments = ((data as Document[]) ?? []).filter((doc) => (userId ? doc.user_id === userId : true));
-  const categories = Array.from(new Set(allDocuments.map((doc) => doc.category).filter((c): c is string => !!c && c.length > 0))).sort((a, b) => a.localeCompare(b, "ja"));
-  const documents = filterDocuments(allDocuments, query, category, onlyFavorites, onlyPinned);
-  const sortedDocuments = [...documents].sort((a, b) => {
-    if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-    const aTime = new Date(a.created_at as string).getTime();
-    const bTime = new Date(b.created_at as string).getTime();
-    return sort === "asc" ? aTime - bTime : bTime - aTime;
-  });
-
-  // Activity logs
-  let recentActivities: ActivityLog[] = [];
-  if (userId) {
-    const { data: activityData, error: activityError } = await supabase
-      .from("activity_logs")
-      .select("id, action, document_id, document_title, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(8);
-    if (!activityError && activityData) recentActivities = activityData as ActivityLog[];
-  }
-
-  // Stats
-  const totalCount = allDocuments.length;
-  const pinnedCount = allDocuments.filter((d) => d.is_pinned).length;
-  const favoriteCount = allDocuments.filter((d) => d.is_favorite).length;
-  const archivedCount = allDocuments.filter((d) => d.is_archived).length;
-  const sharedCount = allDocuments.filter((d) => !!d.share_token).length;
-  const createdLast30Days = countDocumentsCreatedLast30Days(allDocuments);
-  const lastActivityAt = recentActivities.length > 0 ? formatJstDateTime(recentActivities[0].created_at as string) : null;
-
-  // Similar search
-  let similarDocuments: SimilarDocument[] = [];
-  if (query && query.length >= 2) {
-    try {
-      similarDocuments = await searchSimilarDocuments(query, userId, 0.5, 5);
-    } catch {
-      // Silently fail
+    // Notifications
+    let notifications: Notification[] = [];
+    let unreadCount = 0;
+    if (userId) {
+      notifications = await getUserNotifications(userId, 10, false);
+      unreadCount = await getUnreadNotificationCount(userId);
     }
-  }
 
-  // Comment counts
-  const commentCountMap = new Map<string, number>();
-  if (allDocuments.length > 0) {
-    const documentIds = allDocuments.map((d) => d.id);
-    const { data: comments } = await supabase.from("document_comments").select("document_id").in("document_id", documentIds);
-    if (comments) {
-      for (const row of comments as { document_id: string | null }[]) {
-        if (!row.document_id) continue;
-        commentCountMap.set(row.document_id, (commentCountMap.get(row.document_id) ?? 0) + 1);
+    // Documents query
+    let documentsQuery = supabase.from("documents").select("*").order("created_at", { ascending: sort === "asc" });
+    if (userId) documentsQuery = documentsQuery.eq("user_id", userId);
+    if (activeOrgId) documentsQuery = documentsQuery.eq("organization_id", activeOrgId);
+    documentsQuery = documentsQuery.eq("is_archived", showArchived);
+    const { data, error } = await documentsQuery;
+    if (error) console.error(error);
+
+    const allDocuments = ((data as Document[]) ?? []).filter((doc) => (userId ? doc.user_id === userId : true));
+    const categories = Array.from(new Set(allDocuments.map((doc) => doc.category).filter((c): c is string => !!c && c.length > 0))).sort((a, b) =>
+      a.localeCompare(b, "ja")
+    );
+    const documents = filterDocuments(allDocuments, query, category, onlyFavorites, onlyPinned);
+    const sortedDocuments = [...documents].sort((a, b) => {
+      if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+      const aTime = new Date(a.created_at as string).getTime();
+      const bTime = new Date(b.created_at as string).getTime();
+      return sort === "asc" ? aTime - bTime : bTime - aTime;
+    });
+
+    // Activity logs
+    let recentActivities: ActivityLog[] = [];
+    if (userId) {
+      const { data: activityData, error: activityError } = await supabase
+        .from("activity_logs")
+        .select("id, action, document_id, document_title, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (!activityError && activityData) recentActivities = activityData as ActivityLog[];
+    }
+
+    // Stats
+    const totalCount = allDocuments.length;
+    const pinnedCount = allDocuments.filter((d) => d.is_pinned).length;
+    const favoriteCount = allDocuments.filter((d) => d.is_favorite).length;
+    const archivedCount = allDocuments.filter((d) => d.is_archived).length;
+    const sharedCount = allDocuments.filter((d) => !!d.share_token).length;
+    const createdLast30Days = countDocumentsCreatedLast30Days(allDocuments);
+    const lastActivityAt = recentActivities.length > 0 ? formatJstDateTime(recentActivities[0].created_at as string) : null;
+
+    // Similar search
+    let similarDocuments: SimilarDocument[] = [];
+    if (query && query.length >= 2) {
+      try {
+        similarDocuments = await searchSimilarDocuments(query, userId, 0.5, 5);
+      } catch {
+        // Silently fail
       }
     }
-  }
 
-  const langSuffix = locale === "en" ? "?lang=en" : "";
-  const langParam = locale === "en" ? "&lang=en" : "";
+    // Comment counts
+    const commentCountMap = new Map<string, number>();
+    if (allDocuments.length > 0) {
+      const documentIds = allDocuments.map((d) => d.id);
+      const { data: comments } = await supabase.from("document_comments").select("document_id").in("document_id", documentIds);
+      if (comments) {
+        for (const row of comments as { document_id: string | null }[]) {
+          if (!row.document_id) continue;
+          commentCountMap.set(row.document_id, (commentCountMap.get(row.document_id) ?? 0) + 1);
+        }
+      }
+    }
 
-  return (
+    const langSuffix = locale === "en" ? "?lang=en" : "";
+    const langParam = locale === "en" ? "&lang=en" : "";
+
+    return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
       {/* Sidebar - Linear Style */}
       <Sidebar locale={locale} stats={{ total: totalCount, archived: archivedCount }} />
@@ -792,5 +795,36 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
         </main>
       </div>
     </div>
-  );
+    );
+  } catch (error) {
+    console.error("[Dashboard] render error:", error);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+        <div className="max-w-md w-full text-center space-y-4">
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
+            {locale === "en" ? "Failed to load dashboard" : "ダッシュボードを読み込めませんでした"}
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {locale === "en"
+              ? "An unexpected error occurred while loading your documents. Please try refreshing the page or going back to the home screen."
+              : "ドキュメントの読み込み中に予期しないエラーが発生しました。ページの再読み込み、またはホーム画面に戻ってやり直してください。"}
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
+            <a
+              href={typeof window === "undefined" ? "/app" : window.location.href}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors"
+            >
+              {locale === "en" ? "Retry" : "再試行する"}
+            </a>
+            <Link
+              href={locale === "en" ? "/?lang=en" : "/"}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {locale === "en" ? "Back to home" : "ホームに戻る"}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
