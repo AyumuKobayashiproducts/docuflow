@@ -835,10 +835,12 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     </div>
     );
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
     console.error("[Dashboard] render error:", error);
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
-        <div className="max-w-md w-full text-center space-y-4">
+        <div className="max-w-2xl w-full text-center space-y-4">
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
             {locale === "en" ? "Failed to load dashboard" : "ダッシュボードを読み込めませんでした"}
           </h1>
@@ -847,6 +849,22 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
               ? "An unexpected error occurred while loading your documents. Please try refreshing the page or going back to the home screen."
               : "ドキュメントの読み込み中に予期しないエラーが発生しました。ページの再読み込み、またはホーム画面に戻ってやり直してください。"}
           </p>
+          {/* Debug info - remove in production */}
+          <details className="mt-4 text-left bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
+            <summary className="cursor-pointer text-xs font-medium text-slate-600 dark:text-slate-300">
+              Debug Info (Click to expand)
+            </summary>
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-rose-600 dark:text-rose-400 font-mono break-all">
+                Error: {errorMessage}
+              </p>
+              {errorStack && (
+                <pre className="text-[10px] text-slate-500 dark:text-slate-400 font-mono whitespace-pre-wrap break-all max-h-40 overflow-auto">
+                  {errorStack}
+                </pre>
+              )}
+            </div>
+          </details>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
             <a
               href={typeof window === "undefined" ? "/app" : window.location.href}
