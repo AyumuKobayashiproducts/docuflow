@@ -66,7 +66,6 @@ DocuFlow は、**PDF / Word などの業務ドキュメントを AI 要約・タ
 
 
 ## 🎯 Problem → Solution
-## 🎯 Problem → Solution
 
 | 🎯 Common Problem (Teams) | ✨ How DocuFlow Solves It |
 |:-------------------------|:--------------------------|
@@ -78,6 +77,17 @@ DocuFlow は、**PDF / Word などの業務ドキュメントを AI 要約・タ
 <br />
 
 ## 🌟 Key Value Propositions
+
+**What this project demonstrates from an engineering & product perspective:**
+
+- **End-to-end ownership** – From Figma-like UI design to database schema, API contracts, deployment, monitoring, and product documentation  
+- **Modern SaaS architecture** – Multi-tenant RBAC on Supabase + Next.js App Router, with Web Vitals and CI baked in from day one  
+- **Practical AI integration** – Realistic usage of GPT-4 for summarization and retrieval, with clear fallbacks and safety checks  
+- **Maintainable codebase** – Strict TypeScript, modular `lib/` + `components/ui/`, and a testable, documented structure  
+
+If you’re a hiring manager or reviewer, you can scan this section to understand **why this is a strong portfolio piece**: it’s not just a UI demo, but a full product with real-world concerns addressed.
+
+<br />
 
 This project demonstrates three core engineering capabilities:
 
@@ -471,6 +481,7 @@ docuflow/
 | [🎨 UI Flow](docs/ui-flow.md) | Screen transitions & user flows |
 | [🗄️ Database Schema](docs/db-schema.md) | Table definitions & RLS |
 | [🏗️ Architecture](docs/architecture.md) | System design |
+| [🧩 OSS Components](docs/oss-components.md) | Reusable UI & infra modules for other products |
 | [🔐 Security](docs/security.md) | Security design & policies |
 | [🚀 Operations](docs/operations.md) | Deployment & operations guide |
 | [⚠️ Error Handling](docs/error-handling.md) | Error handling strategy |
