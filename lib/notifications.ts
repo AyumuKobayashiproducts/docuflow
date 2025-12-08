@@ -6,8 +6,8 @@
  * - メンション解析
  */
 
-import { supabase } from "@/lib/supabaseClient";
-import type { Locale } from "@/lib/i18n";
+import { supabase } from "./supabaseClient";
+import type { Locale } from "./i18n";
 
 // 通知タイプ
 export type NotificationType =
@@ -180,11 +180,13 @@ export function extractMentions(content: string): string[] {
   // @user@example.com または @名前（スペースまで）を検出
   const mentionRegex = /@([^\s@]+@[^\s@]+\.[^\s@]+|[^\s@]+)/g;
   const matches = content.match(mentionRegex);
-  
+
   if (!matches) return [];
 
-  // @を除去して返す
-  return matches.map((m) => m.slice(1));
+  // @を除去し、末尾の句読点（, . ! ?）などをトリムして返す
+  return matches
+    .map((m) => m.slice(1))
+    .map((name) => name.replace(/[.,!?]+$/, ""));
 }
 
 /**

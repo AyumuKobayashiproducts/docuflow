@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabaseClient";
-import { getActiveOrganizationId } from "@/lib/organizations";
+import { getActiveOrganizationId } from "./organizations";
 
 type ActivityAction =
   | "create_document"

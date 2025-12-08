@@ -6,12 +6,24 @@ vi.mock("next/headers", () => ({
   cookies: vi.fn(),
 }));
 
-// Mock supabase client
+// Mock supabase client (activity_logs insert + organization_members query)
+const mockInsert = vi.fn().mockResolvedValue({ data: null, error: null });
+const mockQueryResult = { data: [], error: null };
+
+const mockQueryBuilder = {
+  select: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  order: vi.fn().mockResolvedValue(mockQueryResult),
+};
+
+const mockFrom = vi.fn(() => ({
+  ...mockQueryBuilder,
+  insert: mockInsert,
+}));
+
 vi.mock("@/lib/supabaseClient", () => ({
   supabase: {
-    from: vi.fn(() => ({
-      insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-    })),
+    from: mockFrom,
   },
 }));
 
@@ -62,6 +74,7 @@ describe("activityLog", () => {
       expect(supabase.from).toHaveBeenCalledWith("activity_logs");
       expect(mockInsert).toHaveBeenCalledWith({
         user_id: "user-123",
+        organization_id: null,
         action: "create_document",
         document_id: "doc-1",
         document_title: "Test Document",
@@ -150,6 +163,7 @@ describe("activityLog", () => {
 
       expect(mockInsert).toHaveBeenCalledWith({
         user_id: "user-123",
+        organization_id: null,
         action: "create_document",
         document_id: null,
         document_title: null,

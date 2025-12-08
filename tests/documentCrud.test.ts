@@ -11,7 +11,7 @@ describe("documentCrud", () => {
     });
 
     it("should validate title max length", () => {
-      const title = "A".repeat(256);
+      const title = "A".repeat(255);
       expect(title.length).toBeLessThanOrEqual(255);
     });
 

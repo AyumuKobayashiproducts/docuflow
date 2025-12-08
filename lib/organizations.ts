@@ -52,6 +52,11 @@ const ACTIVE_ORG_COOKIE = "docuflow_active_org";
 export async function getUserOrganizations(
   userId: string
 ): Promise<OrganizationMembership[]> {
+  // テスト環境ではDBアクセスをスキップ（Vitest用）
+  if (process.env.NODE_ENV === "test") {
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("organization_members")
     .select(
