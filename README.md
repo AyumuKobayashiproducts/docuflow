@@ -36,27 +36,44 @@
 
 </div>
 
+## 🔍 TL;DR for Reviewers (Hiring / Findy)
+
+If you only have a few minutes, this is what this repository demonstrates:
+
+- **Production-grade B2B SaaS** built solo with Next.js 16 + Supabase + OpenAI  
+- **Full-stack ownership**: auth, organizations/RBAC, billing, analytics, observability, CI/CD  
+- **Real-world readiness**: Web Vitals dashboard, Lighthouse CI, E2E tests, Sentry, PWA, full i18n (EN/JA)
+
+**Quick review paths:**
+
+- **See the product**: [Live Demo](https://docuflow-azure.vercel.app) → `/app?lang=en`  
+- **See the architecture**: [`docs/architecture.md`](docs/architecture.md)  
+- **See the quality gates**: [CI workflows](.github/workflows) · [tests/](tests/) · [e2e/](e2e/)
+
 ## 🇯🇵 日本語での概要
 
-DocuFlow は、**PDF / Word などのドキュメントを AI 要約・タグ付けして整理するためのワークスペース**です。
+DocuFlow は、**PDF / Word などの業務ドキュメントを AI 要約・タグ付けして整理するための B2B SaaS 風ワークスペース**です。  
+「1人のエンジニアが、どこまで本番プロダクトレベルの設計・実装・運用まで作り込めるか」を示すことを目的にしています。
 
 - ✅ ドキュメント本文から **3〜5行の要約** と **最大3つのタグ** を自動生成  
 - ✅ OpenAI + pgvector を使った **意味ベース検索（ベクトル検索）**  
 - ✅ 組織・ロール（Owner / Admin / Member）対応の **チーム向けマルチテナント設計**  
-- ✅ Supabase / Next.js 16 / TypeScript / Vitest / Playwright / Lighthouse CI などを用いた **本番運用を意識した SaaS 設計**
+- ✅ Supabase / Next.js 16 / TypeScript / Vitest / Playwright / Lighthouse CI などを使った **本番運用を意識した SaaS アーキテクチャ**
 
 デモ環境ではサンプルドキュメントが多数用意されており、  
-`/app?lang=ja` と `/app?lang=en` を切り替えることで、**日本語 / 英語 UI の両方**を確認できます。
+`/app?lang=ja` と `/app?lang=en` を切り替えることで、**日本語 / 英語 UI の両方**を確認できます。  
+**採用担当・レビューをされる方は、この下の英語セクションからご覧いただくと、全体像がすぐに伝わる構成になっています。**
 
 
 ## 🎯 Problem → Solution
+## 🎯 Problem → Solution
 
-| 🎯 Common Problem | ✨ How DocuFlow Solves It |
-|:---|:---|
-| Documents pile up and become impossible to find | AI tagging + vector search reduces search time by **90%** |
-| No time to write summaries | GPT-4 generates **3-5 line summaries automatically** |
-| Can't search inside PDF/Word files | Text extraction → full-text + semantic search |
-| Sharing is tedious | **One-click public link** generation, revocable anytime |
+| 🎯 Common Problem (Teams) | ✨ How DocuFlow Solves It |
+|:-------------------------|:--------------------------|
+| Documents & specs pile up and nobody can find the latest version | AI tagging + vector search cut “find the right doc” time from minutes to **a few seconds** |
+| PMs and engineers don’t have time to write summaries | GPT‑4.1 generates concise **3–5 line summaries** in Japanese & English automatically |
+| Knowledge is locked inside PDF / Word / slides | Text extraction + full‑text + semantic search make legacy documents fully searchable |
+| Sharing outside the team is painful and error‑prone | **One‑click, revocable public links** for read‑only access – no account required |
 
 <br />
 
