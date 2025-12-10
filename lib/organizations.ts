@@ -14,6 +14,8 @@ import {
   getRoleDisplayName,
   getRoleBadgeClass,
 } from "@/lib/organizationTypes";
+import { canAddMember } from "@/lib/subscription";
+import type { Locale } from "@/lib/i18n";
 
 // メンバーシップ（所属情報）
 export type OrganizationMembership = {
@@ -294,6 +296,12 @@ export async function acceptInvitation(
   // 有効期限チェック
   if (new Date(invitation.expires_at) < new Date()) {
     return { success: false, error: "招待の有効期限が切れています。" };
+  }
+
+  // プラン制限チェック（デフォルトは日本語）
+  const limitCheck = await canAddMember(invitation.organization_id, "ja");
+  if (!limitCheck.allowed) {
+    return { success: false, error: limitCheck.reason || "メンバー数の上限に達しています。" };
   }
 
   // メンバーとして追加

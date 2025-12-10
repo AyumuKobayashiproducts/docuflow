@@ -79,7 +79,53 @@
 
 ---
 
-### 5. 推奨インデックス / 制約（例）
+### 5. `user_settings` テーブル
+
+**用途**: ユーザーごとの設定とサブスクリプション情報を保持する。
+
+| カラム名                    | 型          | 必須 | 説明                                                                                  |
+| --------------------------- | ----------- | ---- | ------------------------------------------------------------------------------------- |
+| `user_id`                   | uuid (PK)   | ✔︎    | ユーザー ID（`auth.users.id` を参照）。                                              |
+| `ai_auto_summary_on_new`    | boolean     | ✖︎    | 新規ドキュメント作成時にAI要約を自動生成するか。デフォルト `true`。                   |
+| `ai_auto_summary_on_upload` | boolean     | ✖︎    | ファイルアップロード時にAI要約を自動生成するか。デフォルト `true`。                   |
+| `default_share_expires_in`  | text        | ✖︎    | 共有リンクのデフォルト有効期限（`"7"`, `"30"`, `"none"`）。デフォルト `"7"`。          |
+| `default_sort`              | text        | ✖︎    | ダッシュボードのデフォルトソート（`"desc"`, `"asc"`, `"pinned"`）。デフォルト `"desc"`。|
+| `default_show_archived`      | boolean     | ✖︎    | ダッシュボードでアーカイブ済みをデフォルト表示するか。デフォルト `false`。             |
+| `default_shared_only`        | boolean     | ✖︎    | ダッシュボードで共有済みのみをデフォルト表示するか。デフォルト `false`。              |
+| `subscription_plan`          | text        | ✔︎    | 個人ユーザーのサブスクリプションプラン（`free`, `pro`, `team`, `enterprise`）。デフォルト `free`。 |
+| `stripe_customer_id`        | text        | ✖︎    | Stripe 上の Customer ID（個人ユーザー用）。                                           |
+| `stripe_subscription_id`    | text        | ✖︎    | Stripe 上の Subscription ID（個人ユーザー用）。                                       |
+| `billing_email`             | text        | ✖︎    | 請求先メールアドレス（Stripe Checkout で入力されたもの）。                             |
+| `subscription_status`       | text        | ✖︎    | サブスクリプション状態（`active`, `canceled`, `past_due`, `trialing`）。              |
+| `current_period_end`        | timestamptz | ✖︎    | 現在の請求期間の終了日時。                                                             |
+
+---
+
+### 6. `organizations` テーブル（サブスクリプション関連カラム）
+
+**用途**: 組織（チーム）のサブスクリプション情報を保持する。
+
+| カラム名                 | 型         | 必須 | 説明                                                                                  |
+| ------------------------ | ---------- | ---- | ------------------------------------------------------------------------------------- |
+| `id`                     | uuid (PK)  | ✔︎    | 組織 ID。                                                                             |
+| `name`                   | text       | ✔︎    | 組織名。                                                                              |
+| `slug`                   | text       | ✖︎    | 組織のスラッグ（URL用）。                                                              |
+| `owner_id`               | uuid       | ✔︎    | 組織のオーナーとなるユーザーの ID。                                                    |
+| `plan`                   | text       | ✔︎    | 組織のサブスクリプションプラン（`free`, `pro`, `team`, `enterprise`）。デフォルト `free`。 |
+| `seat_limit`             | integer    | ✖︎    | 組織内の最大メンバー数（null の場合は無制限）。                                        |
+| `document_limit`         | integer    | ✖︎    | 組織内で作成可能なドキュメント数の上限（null の場合は無制限）。                        |
+| `stripe_customer_id`     | text       | ✖︎    | Stripe 上の Customer ID（組織用）。                                                   |
+| `stripe_subscription_id` | text       | ✖︎    | Stripe 上の Subscription ID（組織用）。                                                |
+| `billing_email`          | text       | ✖︎    | 請求先メールアドレス（Stripe Checkout で入力されたもの）。                              |
+| `created_at`             | timestamptz| ✔︎    | 作成日時。デフォルト `now()`。                                                         |
+| `updated_at`             | timestamptz| ✔︎    | 更新日時。デフォルト `now()`。                                                         |
+
+詳細な組織管理テーブル（`organization_members`, `organization_invitations`）については、  
+`supabase/migrations/20241206_add_organizations.sql` を参照。
+
+---
+
+### 7. 推奨インデックス / 制約（例）
 
 実際の運用負荷は小さい想定だが、以下のインデックス / 制約を推奨する。
 
@@ -109,7 +155,7 @@ create index if not exists documents_embedding_idx
 
 ---
 
-### 6. RLS ポリシー（概要）
+### 8. RLS ポリシー（概要）
 
 RLS を本番で有効化する場合、以下の方針で運用する:
 
@@ -125,7 +171,7 @@ RLS を本番で有効化する場合、以下の方針で運用する:
 
 ---
 
-### 7. ベクトル検索（pgvector）
+### 9. ベクトル検索（pgvector）
 
 **用途**: ドキュメントの意味的な類似検索を実現する。
 

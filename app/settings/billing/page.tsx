@@ -6,6 +6,17 @@ import { Logo } from "@/components/Logo";
 import { supabase } from "@/lib/supabaseClient";
 import type { Locale } from "@/lib/i18n";
 import { getLocaleFromParam } from "@/lib/i18n";
+import {
+  getPersonalSubscription,
+  getOrganizationSubscription,
+  getEffectivePlan,
+} from "@/lib/subscription";
+import { getActiveOrganizationId } from "@/lib/organizations";
+import { SubscriptionPlans } from "./SubscriptionPlans";
+import { SubscriptionLimitWarning } from "@/components/SubscriptionLimitWarning";
+import { getStorageUsage } from "@/lib/subscriptionUsage";
+import { PaymentMethodsSection } from "./PaymentMethodsSection";
+import { InvoicesSection } from "./InvoicesSection";
 
 type OrganizationRow = {
   id: string;
@@ -37,6 +48,19 @@ export default async function BillingSettingsPage({
       locale === "en" ? "/settings/billing?lang=en" : "/settings/billing";
     redirect(`/auth/login?redirectTo=${encodeURIComponent(redirectTarget)}`);
   }
+
+  // 個人ユーザーのプラン情報を取得
+  const personalSub = await getPersonalSubscription(userId);
+  
+  // アクティブな組織を取得
+  const activeOrgId = await getActiveOrganizationId(userId);
+  const orgSub = activeOrgId
+    ? await getOrganizationSubscription(activeOrgId)
+    : null;
+
+  // 有効なプラン（個人 or 組織）を取得
+  const { plan: effectivePlan, type: subscriptionType } =
+    await getEffectivePlan(userId, activeOrgId);
 
   const { data: organizations } = await supabase
     .from("organizations")
@@ -210,20 +234,33 @@ export default async function BillingSettingsPage({
                     </span>
                   </div>
                   {primaryOrg.document_limit && (
-                    <div className="relative h-2 w-full rounded-full bg-slate-200 overflow-hidden">
-                      <div
-                        className={`h-2 rounded-full transition-all ${
-                          documentCount / primaryOrg.document_limit > 0.9
-                            ? "bg-red-500"
-                            : documentCount / primaryOrg.document_limit > 0.7
-                            ? "bg-amber-500"
-                            : "bg-emerald-500"
-                        }`}
-                        style={{
-                          width: `${Math.min(100, (documentCount / primaryOrg.document_limit) * 100)}%`,
-                        }}
-                      />
-                    </div>
+                    <>
+                      <div className="relative h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                        <div
+                          className={`h-2 rounded-full transition-all ${
+                            documentCount / primaryOrg.document_limit > 0.9
+                              ? "bg-red-500"
+                              : documentCount / primaryOrg.document_limit > 0.7
+                              ? "bg-amber-500"
+                              : "bg-emerald-500"
+                          }`}
+                          style={{
+                            width: `${Math.min(100, (documentCount / primaryOrg.document_limit) * 100)}%`,
+                          }}
+                        />
+                      </div>
+                      {documentCount / primaryOrg.document_limit >= 0.8 && (
+                        <div className="mt-2">
+                          <SubscriptionLimitWarning
+                            type="document"
+                            currentCount={documentCount}
+                            limit={primaryOrg.document_limit}
+                            locale={locale}
+                            subscriptionType="organization"
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                   <p className="mt-2 text-[11px] text-slate-500">
                     {locale === "en"
@@ -294,55 +331,69 @@ export default async function BillingSettingsPage({
           )}
         </section>
 
-        <section className="rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 p-6 shadow-sm">
-          <h2 className="mb-2 text-sm font-semibold text-emerald-900">
-            {locale === "en"
-              ? "Upgrade to Pro / Team"
-              : "Pro / Team プランへのアップグレード"}
+        {/* プラン選択セクション */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-sm font-semibold text-slate-900">
+            {locale === "en" ? "Available plans" : "利用可能なプラン"}
           </h2>
-          <p className="text-xs text-emerald-900">
+          <p className="mb-4 text-xs text-slate-600">
             {locale === "en"
-              ? "Designed with Stripe Checkout integration in mind. For details, see "
-              : "Stripe Checkout 連携を前提とした設計になっています。詳細は "}
-            <Link
-              href="/docs/#/billing"
-              className="font-medium underline underline-offset-2"
-            >
-              Billing ドキュメント
-            </Link>
-            {locale === "en" ? "." : " を参照してください。"}
+              ? "Choose a plan that fits your needs. You can upgrade or downgrade at any time."
+              : "ニーズに合わせてプランを選択できます。いつでもアップグレードまたはダウングレード可能です。"}
           </p>
+          <SubscriptionPlans
+            currentPlan={effectivePlan}
+            subscriptionType={subscriptionType}
+            locale={locale}
+            stripeConfigured={stripeConfigured}
+          />
+        </section>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
+        {/* 支払い方法セクション */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <PaymentMethodsSection
+            subscriptionType={subscriptionType}
+            locale={locale}
+          />
+        </section>
+
+        {/* 請求履歴セクション */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <InvoicesSection
+            subscriptionType={subscriptionType}
+            locale={locale}
+          />
+        </section>
+
+        {/* Billing Portal セクション */}
+        {(personalSub.stripeCustomerId || primaryOrg?.stripe_customer_id) && (
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-2 text-sm font-semibold text-slate-900">
+              {locale === "en"
+                ? "Manage subscription"
+                : "サブスクリプション管理"}
+            </h2>
+            <p className="mb-4 text-xs text-slate-600">
+              {locale === "en"
+                ? "Update payment methods, view billing history, and manage your subscription through Stripe Customer Portal."
+                : "Stripe Customer Portal から支払い方法の更新、請求履歴の確認、サブスクリプションの管理ができます。"}
+            </p>
             <form
-              action="/api/billing/create-checkout-session"
+              action="/api/billing/create-portal-session"
               method="post"
               className="inline"
             >
               <button
                 type="submit"
-                className="inline-flex items-center rounded-full bg-emerald-600 px-4 py-2 text-xs font-medium text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
-                disabled={!stripeConfigured}
+                className="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white shadow-sm hover:bg-slate-800"
               >
                 {locale === "en"
-                  ? "Upgrade to Pro (Stripe Checkout)"
-                  : "Pro にアップグレード（Stripe Checkout）"}
+                  ? "Open billing portal"
+                  : "請求ポータルを開く"}
               </button>
             </form>
-            {!stripeConfigured && (
-              <span className="text-[11px] text-emerald-900">
-                {locale === "en"
-                  ? "Environment variables "
-                  : "環境変数 "}
-                <code>STRIPE_SECRET_KEY</code>,{" "}
-                <code>STRIPE_PRICE_PRO_MONTH</code>
-                {locale === "en"
-                  ? " are not set, so this page works as a UI-only demo."
-                  : " が未設定のため、現在は UI デモのみ有効です。"}
-              </span>
-            )}
-          </div>
-        </section>
+          </section>
+        )}
       </main>
     </div>
   );

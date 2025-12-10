@@ -1,4 +1,13 @@
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import type { Locale } from "@/lib/i18n";
+import { getLocaleFromParam } from "@/lib/i18n";
+
 export default function Loading() {
+  const searchParams = useSearchParams();
+  const locale: Locale = getLocaleFromParam(searchParams.get("lang") || undefined);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-950/20 flex items-center justify-center">
       <div className="text-center animate-fade-in">
@@ -13,7 +22,7 @@ export default function Loading() {
 
         {/* Loading Text */}
         <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-          読み込み中...
+          {locale === "en" ? "Loading..." : "読み込み中..."}
         </p>
 
         {/* Progress Dots */}
@@ -30,13 +39,6 @@ export default function Loading() {
     </div>
   );
 }
-
-
-
-
-
-
-
 
 
 

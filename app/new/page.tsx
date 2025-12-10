@@ -10,6 +10,8 @@ import {
 import { logActivity } from "@/lib/activityLog";
 import { updateDocumentEmbedding } from "@/lib/similarSearch";
 import { getActiveOrganizationId } from "@/lib/organizations";
+import { canCreateDocument } from "@/lib/subscription";
+import { canUseStorage } from "@/lib/subscriptionUsage";
 import { Logo } from "@/components/Logo";
 import { NewSubmitButtons } from "@/components/NewSubmitButtons";
 import { NewFileDropZone } from "@/components/NewFileDropZone";
@@ -76,6 +78,12 @@ async function fastCreateDocument(formData: FormData) {
     return;
   }
 
+  // プラン制限チェック
+  const limitCheck = await canCreateDocument(userId, activeOrgId);
+  if (!limitCheck.allowed) {
+    throw new Error(limitCheck.reason || "Document limit reached");
+  }
+
   if (!title) {
     title = content.slice(0, 30) || "無題ドキュメント";
   }
@@ -124,6 +132,12 @@ async function createDocument(formData: FormData) {
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
   const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
 
+  // ロケール取得（デフォルトは日本語）
+  const langParam = formData.get("lang");
+  const locale: Locale = getLocaleFromParam(
+    langParam ? String(langParam) : undefined,
+  );
+
   let title = String(formData.get("title") ?? "").trim();
   let category = String(formData.get("category") ?? "").trim();
   const rawContent = String(formData.get("rawContent") ?? "").trim();
@@ -147,6 +161,21 @@ async function createDocument(formData: FormData) {
 
   if (!content) {
     return;
+  }
+
+  // プラン制限チェック
+  const limitCheck = await canCreateDocument(userId, activeOrgId, locale);
+  if (!limitCheck.allowed) {
+    throw new Error(limitCheck.reason || "Document limit reached");
+  }
+
+  // ストレージ容量チェック（ファイルアップロード時）
+  if (file instanceof File && file.size > 0) {
+    const fileSizeMB = file.size / (1024 * 1024);
+    const storageCheck = await canUseStorage(userId, activeOrgId, fileSizeMB, locale);
+    if (!storageCheck.allowed) {
+      throw new Error(storageCheck.reason || "Storage limit exceeded");
+    }
   }
 
   let summary = "";

@@ -3,10 +3,15 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowserClient";
+import type { Locale } from "@/lib/i18n";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // redirectTo のクエリに ?lang=en が含まれているかどうかでロケールを判定
+  const redirectTo = searchParams.get("redirectTo") || "";
+  const locale: Locale = redirectTo.includes("lang=en") ? "en" : "ja";
 
   useEffect(() => {
     let active = true;
@@ -28,8 +33,8 @@ export default function AuthCallbackPage() {
         document.cookie = "docuhub_ai_auth=1; path=/;";
         document.cookie = `docuhub_ai_user_id=${userId}; path=/;`;
 
-        const redirectTo = searchParams.get("redirectTo") || "/app";
-        router.replace(redirectTo);
+        const finalRedirect = redirectTo || "/app";
+        router.replace(finalRedirect);
       } catch (e) {
         console.error("Unexpected error in OAuth callback:", e);
         router.replace("/auth/login?error=oauth_callback");
@@ -41,7 +46,7 @@ export default function AuthCallbackPage() {
     return () => {
       active = false;
     };
-  }, [router, searchParams]);
+  }, [router, redirectTo]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
@@ -50,16 +55,11 @@ export default function AuthCallbackPage() {
           DF
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-300">
-          Google でログインしています…
+          {locale === "en"
+            ? "Logging you in with Google..."
+            : "Google でログインしています…"}
         </p>
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
