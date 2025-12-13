@@ -14,7 +14,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import type { Locale } from "@/lib/i18n";
 
 interface NavItemProps {
   href: string;
@@ -22,17 +21,12 @@ interface NavItemProps {
   label: string;
   active?: boolean;
   badge?: string | number;
-  locale: Locale;
 }
 
-function NavItem({ href, icon, label, active, badge, locale }: NavItemProps) {
-  const linkHref = locale === "en" && !href.includes("lang=en") 
-    ? `${href}${href.includes("?") ? "&" : "?"}lang=en`
-    : href;
-
+function NavItem({ href, icon, label, active, badge }: NavItemProps) {
   return (
     <Link
-      href={linkHref}
+      href={href}
       className={`
         group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
         transition-all duration-150 ease-out
@@ -62,14 +56,13 @@ function NavItem({ href, icon, label, active, badge, locale }: NavItemProps) {
 }
 
 interface SidebarProps {
-  locale: Locale;
   stats?: {
     total: number;
     archived: number;
   };
 }
 
-export function Sidebar({ locale, stats }: SidebarProps) {
+export function Sidebar({ stats }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isArchived = searchParams.get("archived") === "1";
@@ -78,21 +71,21 @@ export function Sidebar({ locale, stats }: SidebarProps) {
     {
       href: "/app",
       icon: <FileText className="h-4 w-4" />,
-      label: locale === "en" ? "Documents" : "ドキュメント",
+      label: "ドキュメント",
       active: pathname === "/app" && !isArchived,
       badge: stats?.total,
     },
     {
       href: "/app?archived=1",
       icon: <FolderArchive className="h-4 w-4" />,
-      label: locale === "en" ? "Archived" : "アーカイブ",
+      label: "アーカイブ",
       active: isArchived,
       badge: stats?.archived,
     },
     {
       href: "/new",
       icon: <Plus className="h-4 w-4" />,
-      label: locale === "en" ? "New Document" : "新規作成",
+      label: "新規作成",
       active: pathname === "/new",
     },
   ];
@@ -101,19 +94,19 @@ export function Sidebar({ locale, stats }: SidebarProps) {
     {
       href: "/app/analytics",
       icon: <BarChart3 className="h-4 w-4" />,
-      label: locale === "en" ? "Analytics" : "分析",
+      label: "分析",
       active: pathname === "/app/analytics",
     },
     {
       href: "/app/vitals",
       icon: <Activity className="h-4 w-4" />,
-      label: locale === "en" ? "Web Vitals" : "Web Vitals",
+      label: "Web Vitals",
       active: pathname === "/app/vitals",
     },
     {
       href: "/settings",
       icon: <Settings className="h-4 w-4" />,
-      label: locale === "en" ? "Settings" : "設定",
+      label: "設定",
       active: pathname.startsWith("/settings"),
     },
   ];
@@ -129,17 +122,17 @@ export function Sidebar({ locale, stats }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         <div className="mb-2">
           <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            {locale === "en" ? "Workspace" : "ワークスペース"}
+            ワークスペース
           </p>
         </div>
         {navItems.map((item) => (
-          <NavItem key={item.href} {...item} locale={locale} />
+          <NavItem key={item.href} {...item} />
         ))}
 
         {/* AI Features Section */}
         <div className="mt-6 mb-2">
           <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            {locale === "en" ? "AI Features" : "AI機能"}
+            AI機能
           </p>
         </div>
         <div className="px-3 py-3 mx-1 rounded-lg bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-900/20 dark:to-indigo-900/20 border border-violet-100 dark:border-violet-800/50">
@@ -148,19 +141,17 @@ export function Sidebar({ locale, stats }: SidebarProps) {
               <Sparkles className="h-3.5 w-3.5 text-white" />
             </div>
             <span className="text-xs font-semibold text-violet-900 dark:text-violet-300">
-              {locale === "en" ? "AI Summary" : "AI要約"}
+              AI要約
             </span>
           </div>
           <p className="text-[11px] text-violet-600 dark:text-violet-400 leading-relaxed">
-            {locale === "en" 
-              ? "Auto-generate summaries, titles & tags with GPT-4"
-              : "GPT-4で要約・タイトル・タグを自動生成"}
+            GPT-4で要約・タイトル・タグを自動生成
           </p>
           <Link 
-            href={locale === "en" ? "/new?lang=en" : "/new"}
+            href="/new"
             className="mt-2 flex items-center gap-1 text-[11px] font-medium text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300"
           >
-            {locale === "en" ? "Try now" : "試してみる"}
+            試してみる
             <ChevronRight className="h-3 w-3" />
           </Link>
         </div>
@@ -169,19 +160,16 @@ export function Sidebar({ locale, stats }: SidebarProps) {
       {/* Bottom Navigation */}
       <div className="border-t border-slate-100 dark:border-slate-800 p-3 space-y-1">
         {bottomNavItems.map((item) => (
-          <NavItem key={item.href} {...item} locale={locale} />
+          <NavItem key={item.href} {...item} />
         ))}
       </div>
 
       {/* Footer Tip */}
       <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800">
         <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
-          {locale === "en"
-            ? "Tip: Press ⌘K to open command palette"
-            : "ヒント: ⌘K でコマンドパレットを開く"}
+          ヒント: ⌘K でコマンドパレットを開く
         </p>
       </div>
     </aside>
   );
 }
-

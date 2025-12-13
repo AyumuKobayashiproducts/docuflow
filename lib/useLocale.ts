@@ -1,19 +1,12 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import type { Locale } from "./i18n";
-import { getLocaleFromParam } from "./i18n";
 
 /**
- * Client-side hook to derive current locale from `?lang=` query.
- * Falls back to Japanese when no param is specified.
+ * 常に日本語ロケールを返すフック
+ * 英語版は別サイトで提供するため、このフックは日本語固定
+ * 型は互換性のため Locale ("ja" | "en") を維持
  */
-export function useLocale(defaultLang?: string): Locale {
-  const searchParams = useSearchParams();
-  const langParam = searchParams.get("lang") || defaultLang;
-  return getLocaleFromParam(langParam ?? undefined);
+export function useLocale(_defaultLang?: string): Locale {
+  return "ja";
 }
-
-
-
-

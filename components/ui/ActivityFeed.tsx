@@ -10,7 +10,6 @@ import {
   Archive,
   RotateCcw,
 } from "lucide-react";
-import type { Locale } from "@/lib/i18n";
 
 interface ActivityItem {
   id: string;
@@ -22,7 +21,6 @@ interface ActivityItem {
 
 interface ActivityFeedProps {
   activities: ActivityItem[];
-  locale: Locale;
   className?: string;
 }
 
@@ -75,36 +73,28 @@ function getActivityColor(action: string) {
   }
 }
 
-function describeActivity(action: string, locale: Locale): string {
-  const descriptions: Record<string, { en: string; ja: string }> = {
-    create_document: { en: "Created document", ja: "ドキュメントを作成" },
-    update_document: { en: "Updated document", ja: "ドキュメントを更新" },
-    delete_document: { en: "Deleted document", ja: "ドキュメントを削除" },
-    toggle_pinned: { en: "Toggled pin", ja: "ピン留めを変更" },
-    toggle_favorite: { en: "Toggled favorite", ja: "お気に入りを変更" },
-    enable_share: { en: "Enabled sharing", ja: "共有を有効化" },
-    disable_share: { en: "Disabled sharing", ja: "共有を無効化" },
-    archive_document: { en: "Archived document", ja: "アーカイブに移動" },
-    restore_document: { en: "Restored document", ja: "アーカイブから復元" },
+function describeActivity(action: string): string {
+  const descriptions: Record<string, string> = {
+    create_document: "ドキュメントを作成",
+    update_document: "ドキュメントを更新",
+    delete_document: "ドキュメントを削除",
+    toggle_pinned: "ピン留めを変更",
+    toggle_favorite: "お気に入りを変更",
+    enable_share: "共有を有効化",
+    disable_share: "共有を無効化",
+    archive_document: "アーカイブに移動",
+    restore_document: "アーカイブから復元",
   };
-  return descriptions[action]?.[locale] ?? action;
+  return descriptions[action] ?? action;
 }
 
-function formatRelativeTime(dateStr: string, locale: Locale): string {
+function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / (1000 * 60));
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (locale === "en") {
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }
 
   if (diffMins < 1) return "たった今";
   if (diffMins < 60) return `${diffMins}分前`;
@@ -113,14 +103,12 @@ function formatRelativeTime(dateStr: string, locale: Locale): string {
   return date.toLocaleDateString("ja-JP", { month: "short", day: "numeric" });
 }
 
-export function ActivityFeed({ activities, locale, className = "" }: ActivityFeedProps) {
+export function ActivityFeed({ activities, className = "" }: ActivityFeedProps) {
   if (activities.length === 0) {
     return (
       <div className={`rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 p-8 text-center ${className}`}>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          {locale === "en" 
-            ? "No activity yet. Start by creating your first document."
-            : "まだアクティビティがありません。最初のドキュメントを作成してみましょう。"}
+          まだアクティビティがありません。最初のドキュメントを作成してみましょう。
         </p>
       </div>
     );
@@ -143,7 +131,7 @@ export function ActivityFeed({ activities, locale, className = "" }: ActivityFee
             {/* Content */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                {describeActivity(activity.action, locale)}
+                {describeActivity(activity.action)}
               </p>
               {activity.documentTitle && (
                 <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400 truncate">
@@ -154,7 +142,7 @@ export function ActivityFeed({ activities, locale, className = "" }: ActivityFee
 
             {/* Time */}
             <time className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
-              {formatRelativeTime(activity.createdAt, locale)}
+              {formatRelativeTime(activity.createdAt)}
             </time>
           </div>
         ))}
@@ -162,4 +150,3 @@ export function ActivityFeed({ activities, locale, className = "" }: ActivityFee
     </div>
   );
 }
-
