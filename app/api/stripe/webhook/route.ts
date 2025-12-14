@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { PLAN_LIMITS, type SubscriptionPlan } from "@/lib/subscription";
+import { captureError, captureEvent } from "@/lib/sentry";
 
 function truncate(text: string, max = 1000) {
   if (text.length <= max) return text;
@@ -89,6 +90,14 @@ export async function POST(req: NextRequest) {
     console.warn(
       "[stripe/webhook] STRIPE_SECRET_KEY または STRIPE_WEBHOOK_SECRET が未設定です",
     );
+    captureEvent(
+      "Stripe Webhook が未設定です（環境変数不足）",
+      {
+        hasStripeSecret: !!stripeSecret,
+        hasWebhookSecret: !!webhookSecret,
+      },
+      "warning",
+    );
     return NextResponse.json(
       { error: "Stripe webhook not configured" },
       { status: 500 },
@@ -98,6 +107,11 @@ export async function POST(req: NextRequest) {
   if (!supabaseAdmin) {
     console.warn(
       "[stripe/webhook] supabaseAdmin が未初期化のため、Webhook を処理できません",
+    );
+    captureEvent(
+      "Stripe Webhook を処理できません（supabaseAdmin 未初期化）",
+      {},
+      "error",
     );
     return NextResponse.json(
       { error: "Supabase admin client is not available" },
@@ -125,6 +139,12 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err) {
     console.error("[stripe/webhook] Signature verification failed:", err);
+    captureError(err, {
+      tags: {
+        type: "billing_webhook_signature_failed",
+      },
+      level: "warning",
+    });
     return NextResponse.json(
       { error: "Webhook signature verification failed" },
       { status: 400 },
@@ -194,6 +214,17 @@ export async function POST(req: NextRequest) {
         }
       }
       console.error("[stripe/webhook] Failed to record webhook event:", insertErr);
+      captureError(insertErr, {
+        tags: {
+          type: "billing_webhook_record_failed",
+          eventType: event.type,
+        },
+        extra: {
+          eventId: event.id,
+          livemode: event.livemode,
+        },
+        level: "error",
+      });
       return NextResponse.json(
         { error: "Failed to record webhook event" },
         { status: 500 },
@@ -201,6 +232,17 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     console.error("[stripe/webhook] Failed to enforce idempotency:", e);
+    captureError(e, {
+      tags: {
+        type: "billing_webhook_idempotency_failed",
+        eventType: event.type,
+      },
+      extra: {
+        eventId: event.id,
+        livemode: event.livemode,
+      },
+      level: "error",
+    });
     return NextResponse.json(
       { error: "Failed to enforce idempotency" },
       { status: 500 },
@@ -570,6 +612,17 @@ export async function POST(req: NextRequest) {
       console.warn(
         `[stripe/webhook] Invoice payment failed for customer: ${customerId}`,
       );
+      captureEvent(
+        "Stripe の支払い失敗（invoice.payment_failed）",
+        {
+          stripeEventId: event.id,
+          stripeCustomerId: customerId,
+          invoiceId: invoice.id,
+          amountDue: invoice.amount_due,
+          currency: invoice.currency,
+        },
+        "warning",
+      );
 
       await supabaseAdmin
         .from("organizations")
@@ -613,6 +666,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (err) {
     console.error("[stripe/webhook] Handler failed:", err);
+    captureError(err, {
+      tags: {
+        type: "billing_webhook_handler_failed",
+        eventType: event.type,
+      },
+      extra: {
+        eventId: event.id,
+        livemode: event.livemode,
+      },
+      level: "error",
+    });
     await markWebhookEvent(event.id, {
       status: "failed",
       processed_at: new Date().toISOString(),

@@ -60,6 +60,10 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 
 # 本番URL（パスワードリセット等）
 NEXT_PUBLIC_SITE_URL=https://docuflow-azure.vercel.app
+
+# 運用者（オーナー）ユーザーID（管理ページの保護用）
+# Supabase Auth の user_id（UUID）を指定
+DOCUFLOW_OWNER_USER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 ### Vercel での環境変数設定
