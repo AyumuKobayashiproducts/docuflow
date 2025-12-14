@@ -113,15 +113,53 @@ export default async function BillingSettingsPage() {
       ? (orgSub?.stripeSubscriptionId ?? activeOrg?.stripe_subscription_id ?? null)
       : personalSub.stripeSubscriptionId;
 
-  if (
-    stripeConfigured &&
-    subscriptionIdForSummary &&
-    process.env.STRIPE_SECRET_KEY
-  ) {
+  const stripe =
+    stripeConfigured && process.env.STRIPE_SECRET_KEY
+      ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" })
+      : null;
+
+  // 価格表示は Stripe の Price を正とする（表示と請求のズレを防ぐ）
+  const stripePlanPrices: Partial<
+    Record<
+      "pro" | "team" | "enterprise",
+      {
+        amount: number | null;
+        currency: string | null;
+        interval: "day" | "week" | "month" | "year" | null;
+        intervalCount: number | null;
+      }
+    >
+  > = {};
+
+  if (stripe) {
+    const priceIds = {
+      pro: process.env.STRIPE_PRICE_PRO_MONTH,
+      team: process.env.STRIPE_PRICE_TEAM_MONTH,
+      enterprise: process.env.STRIPE_PRICE_ENTERPRISE_MONTH,
+    } as const;
+
+    await Promise.all(
+      (Object.keys(priceIds) as Array<keyof typeof priceIds>).map(async (p) => {
+        const priceId = priceIds[p];
+        if (!priceId) return;
+        try {
+          const price = await stripe.prices.retrieve(priceId);
+          stripePlanPrices[p] = {
+            amount:
+              typeof price.unit_amount === "number" ? price.unit_amount : null,
+            currency: price.currency ?? null,
+            interval: price.recurring?.interval ?? null,
+            intervalCount: price.recurring?.interval_count ?? null,
+          };
+        } catch {
+          // 価格表示はベストエフォート（課金の本体は priceId で動く）
+        }
+      }),
+    );
+  }
+
+  if (stripe && subscriptionIdForSummary) {
     try {
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-        apiVersion: "2024-06-20",
-      });
       const subscription = await stripe.subscriptions.retrieve(
         subscriptionIdForSummary,
       );
@@ -406,6 +444,7 @@ export default async function BillingSettingsPage() {
             subscriptionType={subscriptionType}
             locale={locale}
             stripeConfig={stripeConfig}
+            stripePlanPrices={stripePlanPrices}
           />
         </section>
 

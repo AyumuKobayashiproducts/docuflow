@@ -5,7 +5,6 @@ import type { Locale } from "@/lib/i18n";
 import {
   PLAN_NAMES,
   PLAN_DESCRIPTIONS,
-  PLAN_PRICES,
   PLAN_LIMITS,
   type SubscriptionPlan,
 } from "@/lib/subscription";
@@ -21,6 +20,17 @@ interface SubscriptionPlansProps {
     team: boolean;
     enterprise: boolean;
   };
+  stripePlanPrices?: Partial<
+    Record<
+      SubscriptionPlan,
+      {
+        amount: number | null;
+        currency: string | null;
+        interval: "day" | "week" | "month" | "year" | null;
+        intervalCount: number | null;
+      }
+    >
+  >;
 }
 
 export function SubscriptionPlans({
@@ -28,6 +38,7 @@ export function SubscriptionPlans({
   subscriptionType,
   locale,
   stripeConfig,
+  stripePlanPrices,
 }: SubscriptionPlansProps) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -91,6 +102,35 @@ export function SubscriptionPlans({
     return null;
   };
 
+  const formatRecurringLabel = (p: {
+    interval: "day" | "week" | "month" | "year" | null;
+    intervalCount: number | null;
+  }) => {
+    if (!p.interval) return "";
+    const count = p.intervalCount && p.intervalCount > 1 ? p.intervalCount : 1;
+    const unit =
+      p.interval === "day"
+        ? "日"
+        : p.interval === "week"
+          ? "週"
+          : p.interval === "month"
+            ? "月"
+            : "年";
+    return count === 1 ? `/${unit}` : `/${count}${unit}`;
+  };
+
+  const formatCurrency = (currency: string, amount: number) => {
+    try {
+      return new Intl.NumberFormat("ja-JP", {
+        style: "currency",
+        currency: currency.toUpperCase(),
+      }).format(amount);
+    } catch {
+      // fallback
+      return `${amount.toLocaleString()} ${currency.toUpperCase()}`;
+    }
+  };
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {plans.map((plan) => {
@@ -120,13 +160,26 @@ export function SubscriptionPlans({
             <div className="mb-4">
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-bold text-slate-900">
-                  {PLAN_PRICES[plan] === 0
+                  {plan === "free"
                     ? "無料"
-                    : `$${PLAN_PRICES[plan]}`}
+                    : plan === "enterprise"
+                      ? "お問合せ"
+                      : stripePlanPrices?.[plan]?.amount != null &&
+                          stripePlanPrices?.[plan]?.currency
+                        ? formatCurrency(
+                            stripePlanPrices[plan]!.currency!,
+                            stripePlanPrices[plan]!.amount!,
+                          )
+                        : "価格未設定"}
                 </span>
-                {PLAN_PRICES[plan] > 0 && (
+                {plan !== "free" &&
+                  plan !== "enterprise" &&
+                  stripePlanPrices?.[plan]?.interval && (
                   <span className="text-xs text-slate-500">
-                    {"/月"}
+                    {formatRecurringLabel({
+                      interval: stripePlanPrices[plan]!.interval!,
+                      intervalCount: stripePlanPrices[plan]!.intervalCount ?? 1,
+                    })}
                   </span>
                 )}
               </div>
