@@ -69,6 +69,9 @@ export default async function AdminStripeWebhooksPage() {
             <p className="text-sm text-slate-600">{"Webhook運用（管理者）"}</p>
           </div>
           <div className="flex items-center gap-2">
+            <Link href={"/admin/billing"} className="btn btn-secondary btn-sm">
+              {"課金設定"}
+            </Link>
             <Link href={"/app/vitals"} className="btn btn-secondary btn-sm">
               {"パフォーマンス監視"}
             </Link>
