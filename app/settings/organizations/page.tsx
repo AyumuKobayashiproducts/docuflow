@@ -17,6 +17,7 @@ import {
   PLAN_NAMES,
   type SubscriptionPlan,
 } from "@/lib/subscription";
+import { getSiteUrl } from "@/lib/getSiteUrl";
 import {
   getRoleDisplayName,
   getRoleBadgeClass,
@@ -30,6 +31,8 @@ type PageProps = {
     action?: string;
     org?: string;
     lang?: string;
+    inviteToken?: string;
+    inviteError?: string;
   }>;
 };
 
@@ -94,9 +97,20 @@ async function inviteAction(formData: FormData) {
     return;
   }
 
-  await createInvitation(organizationId, email, role, userId);
+  const res = await createInvitation(organizationId, email, role, userId);
+  if (res.error || !res.invitation?.token) {
+    redirect(
+      `/settings/organizations?org=${encodeURIComponent(
+        organizationId,
+      )}&inviteError=${encodeURIComponent(res.error ?? "招待の作成に失敗しました。")}`,
+    );
+  }
 
-  revalidatePath("/settings/organizations");
+  redirect(
+    `/settings/organizations?org=${encodeURIComponent(
+      organizationId,
+    )}&inviteToken=${encodeURIComponent(res.invitation.token)}`,
+  );
 }
 
 export default async function OrganizationsPage({ searchParams }: PageProps) {
@@ -104,6 +118,8 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
   const action = params?.action;
   const selectedOrgId = params?.org;
   const locale: Locale = getLocaleFromParam(params?.lang);
+  const inviteToken = params?.inviteToken;
+  const inviteError = params?.inviteError;
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
@@ -185,6 +201,28 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8">
+        {(inviteError || inviteToken) && (
+          <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">
+              招待リンク
+            </h2>
+            {inviteError ? (
+              <p className="mt-2 text-sm text-rose-600">
+                {inviteError}
+              </p>
+            ) : (
+              <>
+                <p className="mt-2 text-xs text-slate-600">
+                  下のURLをコピーして、招待したい人に送ってください（7日で期限切れ）。
+                </p>
+                <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12px] text-slate-800">
+                  {`${getSiteUrl()}/invite/${inviteToken}`}
+                </p>
+              </>
+            )}
+          </section>
+        )}
+
         {/* 新規作成フォーム */}
         {action === "new" && (
           <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

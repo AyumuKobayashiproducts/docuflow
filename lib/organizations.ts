@@ -261,7 +261,6 @@ export async function createInvitation(
       role,
       token,
       expires_at: expiresAt.toISOString(),
-      invited_by: invitedBy,
     })
     .select()
     .single();
@@ -280,7 +279,7 @@ export async function createInvitation(
 export async function acceptInvitation(
   token: string,
   userId: string
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<{ success: boolean; error: string | null; organizationId?: string }> {
   // 招待を取得
   const { data: invitation, error: fetchError } = await supabase
     .from("organization_invitations")
@@ -296,6 +295,21 @@ export async function acceptInvitation(
   // 有効期限チェック
   if (new Date(invitation.expires_at) < new Date()) {
     return { success: false, error: "招待の有効期限が切れています。" };
+  }
+
+  // すでにメンバーなら成功扱い（安全・冪等）
+  const { data: existingMember } = await supabase
+    .from("organization_members")
+    .select("id")
+    .eq("organization_id", invitation.organization_id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (existingMember?.id) {
+    await supabase
+      .from("organization_invitations")
+      .update({ accepted_at: new Date().toISOString() })
+      .eq("id", invitation.id);
+    return { success: true, error: null, organizationId: invitation.organization_id };
   }
 
   // プラン制限チェック（デフォルトは日本語）
@@ -315,6 +329,15 @@ export async function acceptInvitation(
 
   if (memberError) {
     console.error("acceptInvitation member error:", memberError);
+    // unique制約違反などは成功扱いに寄せる（冪等）
+    const msg = (memberError as { message?: string } | null)?.message ?? "";
+    if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("unique")) {
+      await supabase
+        .from("organization_invitations")
+        .update({ accepted_at: new Date().toISOString() })
+        .eq("id", invitation.id);
+      return { success: true, error: null, organizationId: invitation.organization_id };
+    }
     return { success: false, error: "メンバー登録に失敗しました。" };
   }
 
@@ -324,7 +347,7 @@ export async function acceptInvitation(
     .update({ accepted_at: new Date().toISOString() })
     .eq("id", invitation.id);
 
-  return { success: true, error: null };
+  return { success: true, error: null, organizationId: invitation.organization_id };
 }
 
 // getRoleDisplayName / getRoleBadgeClass は organizationTypes から再利用
