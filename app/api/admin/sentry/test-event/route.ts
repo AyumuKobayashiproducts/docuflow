@@ -68,11 +68,14 @@ export async function GET(req: NextRequest) {
 
   // NOTE:
   // - message にUUIDを入れて毎回「新しいIssue」になりやすくし、アラート動作確認を簡単にする
+  //   ただし Sentry のグルーピングは UUID を正規化して同一 Issue にまとめることがあるため、
+  //   fingerprint をユニークにして確実に「新規 Issue」にする
   // - PIIは送らない（userIdは運用上必要な範囲のため extra にのみ入れる）
   captureEvent(
     message,
     {
       tags: { domain, action },
+      fingerprint: ["docuflow.sentry_test_event", action, testEventId],
       extra: {
         testEventId,
         actorUserId: userId,
