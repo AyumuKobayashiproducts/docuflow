@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Stripe from "stripe";
 import { Logo } from "@/components/Logo";
 
-function requireOwner(userId: string | null) {
+function getOwnerUserId(): string | null {
   const ownerUserId = process.env.DOCUFLOW_OWNER_USER_ID;
-  if (!ownerUserId) return notFound();
-  if (!userId) return notFound();
-  if (userId !== ownerUserId) return notFound();
+  return ownerUserId && ownerUserId.trim().length > 0 ? ownerUserId.trim() : null;
 }
 
 function getStripeDashboardBaseUrl(stripeSecretKey: string) {
@@ -37,7 +35,46 @@ function formatMoneyFromUnitAmount(currency: string, unitAmount: number) {
 export default async function AdminBillingConfigPage() {
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
-  requireOwner(userId);
+  if (!userId) {
+    redirect(`/auth/login?redirectTo=${encodeURIComponent("/admin/billing")}`);
+  }
+
+  const ownerUserId = getOwnerUserId();
+  if (!ownerUserId) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <header className="border-b border-slate-200 bg-white">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Logo />
+              <p className="text-sm text-slate-600">{"課金設定（管理者）"}</p>
+            </div>
+            <Link href={"/app"} className="btn btn-secondary btn-sm">
+              {"← ダッシュボードに戻る"}
+            </Link>
+          </div>
+        </header>
+        <main className="mx-auto max-w-6xl px-4 py-8">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="font-semibold">{"管理ページが未設定です"}</p>
+            <p className="mt-2">
+              {
+                "Vercel の環境変数に DOCUFLOW_OWNER_USER_ID（あなたの user_id）を追加し、Redeploy してください。"
+              }
+            </p>
+            <p className="mt-2 text-xs text-amber-800">
+              {"あなたの user_id（ログイン中）: "}
+              <span className="font-mono">{userId}</span>
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (userId !== ownerUserId) {
+    return notFound();
+  }
 
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;

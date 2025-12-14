@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -15,11 +15,9 @@ type WebhookEventRow = {
   payload: unknown | null;
 };
 
-function requireOwner(userId: string | null) {
+function getOwnerUserId(): string | null {
   const ownerUserId = process.env.DOCUFLOW_OWNER_USER_ID;
-  if (!ownerUserId) return notFound();
-  if (!userId) return notFound();
-  if (userId !== ownerUserId) return notFound();
+  return ownerUserId && ownerUserId.trim().length > 0 ? ownerUserId.trim() : null;
 }
 
 export default async function AdminStripeWebhookEventDetailPage({
@@ -31,7 +29,17 @@ export default async function AdminStripeWebhookEventDetailPage({
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
 
-  requireOwner(userId);
+  if (!userId) {
+    redirect(
+      `/auth/login?redirectTo=${encodeURIComponent(
+        `/admin/webhooks/${encodeURIComponent(id)}`,
+      )}`,
+    );
+  }
+
+  const ownerUserId = getOwnerUserId();
+  if (!ownerUserId) return notFound();
+  if (userId !== ownerUserId) return notFound();
 
   if (!supabaseAdmin) return notFound();
 
