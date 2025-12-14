@@ -84,8 +84,16 @@ export default async function BillingSettingsPage() {
     memberCount = membersResult.count ?? 0;
   }
 
+  const stripeConfig = {
+    hasSecretKey: !!process.env.STRIPE_SECRET_KEY,
+    hasSiteUrl: !!process.env.NEXT_PUBLIC_SITE_URL,
+    pro: !!process.env.STRIPE_PRICE_PRO_MONTH,
+    team: !!process.env.STRIPE_PRICE_TEAM_MONTH,
+    enterprise: !!process.env.STRIPE_PRICE_ENTERPRISE_MONTH,
+  } as const;
+
   const stripeConfigured =
-    !!process.env.STRIPE_SECRET_KEY && !!process.env.STRIPE_PRICE_PRO_MONTH;
+    stripeConfig.hasSecretKey && stripeConfig.hasSiteUrl && stripeConfig.pro;
 
   let subscriptionSummary:
     | {
@@ -139,6 +147,33 @@ export default async function BillingSettingsPage() {
       </header>
 
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
+        {!stripeConfigured && (
+          <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+            <h2 className="text-sm font-semibold text-amber-900">
+              {"Stripe の設定が未完了です"}
+            </h2>
+            <p className="mt-1 text-xs text-amber-800">
+              {"課金（アップグレード）を有効にするには、Vercel の環境変数が揃っている必要があります。"}
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-amber-900">
+              {!stripeConfig.hasSecretKey && (
+                <li>{"STRIPE_SECRET_KEY が未設定です（sk_test_...）"}</li>
+              )}
+              {!stripeConfig.hasSiteUrl && (
+                <li>{"NEXT_PUBLIC_SITE_URL が未設定です（https://...）"}</li>
+              )}
+              {!stripeConfig.pro && (
+                <li>{"STRIPE_PRICE_PRO_MONTH が未設定です（price_...）"}</li>
+              )}
+              <li className="text-amber-800">
+                {
+                  "設定後は Vercel の Deployments から Redeploy してください（環境変数の反映が必要です）。"
+                }
+              </li>
+            </ul>
+          </section>
+        )}
+
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-2 text-sm font-semibold text-slate-900">
             {"現在のプラン"}
@@ -255,7 +290,7 @@ export default async function BillingSettingsPage() {
             currentPlan={effectivePlan}
             subscriptionType={subscriptionType}
             locale={locale}
-            stripeConfigured={stripeConfigured}
+            stripeConfig={stripeConfig}
           />
         </section>
 

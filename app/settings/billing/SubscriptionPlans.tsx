@@ -14,14 +14,20 @@ interface SubscriptionPlansProps {
   currentPlan: SubscriptionPlan;
   subscriptionType: "personal" | "organization";
   locale: Locale;
-  stripeConfigured: boolean;
+  stripeConfig: {
+    hasSecretKey: boolean;
+    hasSiteUrl: boolean;
+    pro: boolean;
+    team: boolean;
+    enterprise: boolean;
+  };
 }
 
 export function SubscriptionPlans({
   currentPlan,
   subscriptionType,
   locale,
-  stripeConfigured,
+  stripeConfig,
 }: SubscriptionPlansProps) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -50,7 +56,9 @@ export function SubscriptionPlans({
         window.location.href = data.url;
       } else {
         alert(
-          "チェックアウトセッションの作成に失敗しました",
+          data?.error
+            ? `チェックアウトセッションの作成に失敗しました: ${data.error}`
+            : "チェックアウトセッションの作成に失敗しました",
         );
         setLoading(null);
       }
@@ -64,6 +72,16 @@ export function SubscriptionPlans({
   };
 
   const plans: SubscriptionPlan[] = ["free", "pro", "team", "enterprise"];
+  const baseConfigured = stripeConfig.hasSecretKey && stripeConfig.hasSiteUrl;
+
+  const isPlanConfigured = (plan: SubscriptionPlan) => {
+    if (plan === "free") return true;
+    if (!baseConfigured) return false;
+    if (plan === "pro") return stripeConfig.pro;
+    if (plan === "team") return stripeConfig.team;
+    if (plan === "enterprise") return stripeConfig.enterprise;
+    return false;
+  };
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -71,6 +89,7 @@ export function SubscriptionPlans({
         const limits = PLAN_LIMITS[plan];
         const isCurrent = plan === currentPlan;
         const isEnterprise = plan === "enterprise";
+        const planConfigured = isPlanConfigured(plan);
 
         return (
           <div
@@ -162,15 +181,20 @@ export function SubscriptionPlans({
                 {"営業に問い合わせ"}
               </a>
             ) : (
-              <button
-                onClick={() => handleUpgrade(plan)}
-                disabled={!stripeConfigured || loading === plan}
-                className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                {loading === plan
-                  ? "読み込み中..."
-                  : "アップグレード"}
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleUpgrade(plan)}
+                  disabled={!planConfigured || loading === plan}
+                  className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  {loading === plan ? "読み込み中..." : "アップグレード"}
+                </button>
+                {!planConfigured && (
+                  <p className="text-[11px] text-slate-500">
+                    {"Stripe の環境変数が未設定のためアップグレードできません。"}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         );
