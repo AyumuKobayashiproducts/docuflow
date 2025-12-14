@@ -22,6 +22,7 @@ import type { Locale } from "@/lib/i18n";
 export const dynamic = "force-dynamic";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const BYTES_PER_MB = 1024 * 1024;
 
 async function extractTextFromFile(file: File): Promise<string> {
   const filename = file.name.toLowerCase();
@@ -52,6 +53,7 @@ async function fastCreateDocument(formData: FormData) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
   const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
+  const locale: Locale = "ja";
 
   let title = String(formData.get("title") ?? "").trim();
   let category = String(formData.get("category") ?? "").trim();
@@ -79,9 +81,21 @@ async function fastCreateDocument(formData: FormData) {
   }
 
   // プラン制限チェック
-  const limitCheck = await canCreateDocument(userId, activeOrgId);
+  const limitCheck = await canCreateDocument(userId, activeOrgId, locale);
   if (!limitCheck.allowed) {
     throw new Error(limitCheck.reason || "Document limit reached");
+  }
+
+  // ストレージ容量チェック（実際に保存する本文のサイズで判定）
+  const contentSizeMB = new Blob([content]).size / BYTES_PER_MB;
+  const storageCheck = await canUseStorage(
+    userId,
+    activeOrgId,
+    contentSizeMB,
+    locale,
+  );
+  if (!storageCheck.allowed) {
+    throw new Error(storageCheck.reason || "Storage limit exceeded");
   }
 
   if (!title) {
@@ -117,9 +131,9 @@ async function fastCreateDocument(formData: FormData) {
       documentId: String(created.id),
       documentTitle: title,
     });
-
-    // バックグラウンドで埋め込みベクトルを生成・保存（高速保存なのでawaitしない）
-    updateDocumentEmbedding(String(created.id), content).catch(console.error);
+    // NOTE:
+    // 高速保存は「AIを使わずに保存」するパス。
+    // 埋め込み生成（OpenAI呼び出し）はAI使用量の抜け道になり得るため、ここでは実行しない。
   }
 
   redirect("/");
@@ -166,12 +180,11 @@ async function createDocument(formData: FormData) {
   }
 
   // ストレージ容量チェック（ファイルアップロード時）
-  if (file instanceof File && file.size > 0) {
-    const fileSizeMB = file.size / (1024 * 1024);
-    const storageCheck = await canUseStorage(userId, activeOrgId, fileSizeMB, locale);
-    if (!storageCheck.allowed) {
-      throw new Error(storageCheck.reason || "Storage limit exceeded");
-    }
+  // ※ファイルサイズではなく「保存する本文（抽出後のテキスト）」で判定して抜け道をなくす
+  const contentSizeMB = new Blob([content]).size / BYTES_PER_MB;
+  const storageCheck = await canUseStorage(userId, activeOrgId, contentSizeMB, locale);
+  if (!storageCheck.allowed) {
+    throw new Error(storageCheck.reason || "Storage limit exceeded");
   }
 
   let summary = "";

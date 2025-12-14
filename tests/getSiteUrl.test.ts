@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 describe("getSiteUrl", () => {
   const originalWindow = global.window;
   const originalEnv = process.env;
+  const g = globalThis as any;
 
   beforeEach(() => {
     vi.resetModules();
@@ -18,8 +19,7 @@ describe("getSiteUrl", () => {
     process.env.NEXT_PUBLIC_SITE_URL = "https://custom-domain.com";
 
     // Remove window to simulate server-side
-    // @ts-expect-error: Intentionally deleting window for server-side simulation
-    delete global.window;
+    delete g.window;
 
     const { getSiteUrl } = await import("../lib/getSiteUrl");
     expect(getSiteUrl()).toBe("https://custom-domain.com");
@@ -29,8 +29,7 @@ describe("getSiteUrl", () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
 
     // Mock window.location
-    // @ts-expect-error: Intentionally deleting window for server-side simulation
-    global.window = {
+    g.window = {
       location: {
         origin: "https://docuflow-azure.vercel.app",
       },
@@ -44,8 +43,7 @@ describe("getSiteUrl", () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
 
     // Mock window.location for localhost
-    // @ts-expect-error: Intentionally deleting window for server-side simulation
-    global.window = {
+    g.window = {
       location: {
         origin: "http://localhost:3000",
       },
@@ -58,8 +56,7 @@ describe("getSiteUrl", () => {
   it("should return localhost for 127.0.0.1", async () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
 
-    // @ts-expect-error: Intentionally deleting window for server-side simulation
-    global.window = {
+    g.window = {
       location: {
         origin: "http://127.0.0.1:3000",
       },
@@ -72,8 +69,7 @@ describe("getSiteUrl", () => {
   it("should return production URL as fallback on server-side", async () => {
     delete process.env.NEXT_PUBLIC_SITE_URL;
 
-    // @ts-expect-error: Intentionally deleting window for server-side simulation
-    delete global.window;
+    delete g.window;
 
     const { getSiteUrl } = await import("../lib/getSiteUrl");
     expect(getSiteUrl()).toBe("https://docuflow-azure.vercel.app");
@@ -82,8 +78,7 @@ describe("getSiteUrl", () => {
   it("should prioritize env variable over window.location", async () => {
     process.env.NEXT_PUBLIC_SITE_URL = "https://env-domain.com";
 
-    // @ts-expect-error: Intentionally deleting window for server-side simulation
-    global.window = {
+    g.window = {
       location: {
         origin: "https://different-domain.com",
       },

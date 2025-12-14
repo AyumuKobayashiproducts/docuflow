@@ -5,6 +5,9 @@ import { generateSummaryAndTags } from "@/lib/ai";
 import { logActivity } from "@/lib/activityLog";
 import { getEffectivePlan } from "@/lib/subscription";
 import { ensureAndConsumeAICalls } from "@/lib/aiUsage";
+import { canUseStorage } from "@/lib/subscriptionUsage";
+
+const BYTES_PER_MB = 1024 * 1024;
 
 type PageProps = {
   params: {
@@ -33,45 +36,65 @@ async function updateDocument(formData: FormData) {
     throw new Error("ログインしてください。");
   }
 
-  // 変更前の内容を document_versions に保存してから本体を更新する
+  // 現在のドキュメントを取得（スコープ判定 / 上限チェック / バージョン保存に使用）
+  const { data: current, error: currentError } = await supabase
+    .from("documents")
+    .select("id, user_id, organization_id, title, category, raw_content, summary, tags")
+    .eq("id", id)
+    .eq("user_id", cookieUserId)
+    .single();
+
+  if (currentError || !current) {
+    console.error("[updateDocument] failed to fetch current doc:", currentError);
+    throw new Error("ドキュメントが見つかりません。");
+  }
+
+  const currentDoc = current as {
+    id: string;
+    user_id: string | null;
+    organization_id: string | null;
+    title: string;
+    category: string | null;
+    raw_content: string | null;
+    summary: string | null;
+    tags: string[] | null;
+  };
+
+  // ストレージ容量チェック（編集で本文が増える場合）※ここは必ず強制
+  const oldBytes = new Blob([currentDoc.raw_content ?? ""]).size;
+  const newBytes = new Blob([rawContent]).size;
+  const additionalMB = Math.max(0, (newBytes - oldBytes) / BYTES_PER_MB);
+  if (additionalMB > 0) {
+    const storageCheck = await canUseStorage(
+      cookieUserId,
+      currentDoc.organization_id ?? null,
+      additionalMB,
+      "ja",
+    );
+    if (!storageCheck.allowed) {
+      throw new Error(storageCheck.reason || "Storage limit exceeded");
+    }
+  }
+
+  // 変更前の内容を document_versions に保存してから本体を更新する（失敗しても本体更新は続行）
   try {
-    const { data: current, error: currentError } = await supabase
-      .from("documents")
-      .select("id, user_id, organization_id, title, category, raw_content, summary, tags")
-      .eq("id", id)
-      .eq("user_id", cookieUserId)
-      .single();
+    const { limits } = await getEffectivePlan(
+      cookieUserId,
+      currentDoc.organization_id ?? null,
+    );
 
-    if (!currentError && current) {
-      const currentDoc = current as {
-        id: string;
-        user_id: string | null;
-        organization_id: string | null;
-        title: string;
-        category: string | null;
-        raw_content: string | null;
-        summary: string | null;
-        tags: string[] | null;
-      };
-
-      const { limits } = await getEffectivePlan(
-        cookieUserId,
-        currentDoc.organization_id ?? null,
-      );
-
-      // バージョン履歴はプラン機能（Freeでは保存しない）
-      if (limits.versionHistory) {
-        const versionUserId = cookieUserId ?? currentDoc.user_id;
-        await supabase.from("document_versions").insert({
-          document_id: currentDoc.id,
-          user_id: versionUserId,
-          title: currentDoc.title,
-          category: currentDoc.category,
-          raw_content: currentDoc.raw_content,
-          summary: currentDoc.summary,
-          tags: currentDoc.tags,
-        });
-      }
+    // バージョン履歴はプラン機能（Freeでは保存しない）
+    if (limits.versionHistory) {
+      const versionUserId = cookieUserId ?? currentDoc.user_id;
+      await supabase.from("document_versions").insert({
+        document_id: currentDoc.id,
+        user_id: versionUserId,
+        title: currentDoc.title,
+        category: currentDoc.category,
+        raw_content: currentDoc.raw_content,
+        summary: currentDoc.summary,
+        tags: currentDoc.tags,
+      });
     }
   } catch (e) {
     // バージョン保存に失敗しても本体更新は続行する
@@ -79,15 +102,7 @@ async function updateDocument(formData: FormData) {
   }
 
   // 編集時の要約再生成はAI呼び出しとして消費（ドキュメントの組織スコープに紐づける）
-  const { data: scopeMeta } = await supabase
-    .from("documents")
-    .select("organization_id")
-    .eq("id", id)
-    .eq("user_id", cookieUserId)
-    .maybeSingle();
-  const orgId =
-    (scopeMeta as { organization_id?: string | null } | null)?.organization_id ??
-    null;
+  const orgId = currentDoc.organization_id ?? null;
   await ensureAndConsumeAICalls(cookieUserId, orgId, 1, "ja");
 
   const { summary, tags } = await generateSummaryAndTags(rawContent);

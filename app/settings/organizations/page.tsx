@@ -12,6 +12,12 @@ import {
   createInvitation,
 } from "@/lib/organizations";
 import {
+  getOrganizationSubscription,
+  PLAN_LIMITS,
+  PLAN_NAMES,
+  type SubscriptionPlan,
+} from "@/lib/subscription";
+import {
   getRoleDisplayName,
   getRoleBadgeClass,
   OrganizationRole,
@@ -118,12 +124,17 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
   let userRole: OrganizationRole | null = null;
   let orgDocumentCount = 0;
   let orgActivityCount = 0;
+  let selectedOrgPlan: SubscriptionPlan = "free";
+  let selectedOrgLimits = PLAN_LIMITS.free;
 
   if (selectedOrgId) {
     selectedOrg = organizations.find((o) => o.id === selectedOrgId);
     if (selectedOrg) {
       members = await getOrganizationMembers(selectedOrgId);
       userRole = await getUserRoleInOrganization(userId, selectedOrgId);
+      const orgSub = await getOrganizationSubscription(selectedOrgId);
+      selectedOrgPlan = orgSub?.plan ?? "free";
+      selectedOrgLimits = PLAN_LIMITS[selectedOrgPlan];
       
       // 組織のドキュメント数を取得
       const { count: docCount } = await supabase
@@ -340,6 +351,21 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
 
             {/* 使用量メーター */}
             <div className="mb-6 grid gap-4 sm:grid-cols-3">
+              {(() => {
+                const planName = PLAN_NAMES[selectedOrgPlan][locale];
+                const docLimit = selectedOrgLimits.documentLimit;
+                const seatLimit = selectedOrgLimits.seatLimit;
+                const docPercent =
+                  docLimit === null
+                    ? 100
+                    : Math.min(100, (orgDocumentCount / Math.max(1, docLimit)) * 100);
+                const seatPercent =
+                  seatLimit === null
+                    ? 100
+                    : Math.min(100, (members.length / Math.max(1, seatLimit)) * 100);
+
+                return (
+                  <>
               <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -356,11 +382,13 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                   <div className="h-1.5 w-full rounded-full bg-slate-100">
                     <div
                       className="h-1.5 rounded-full bg-emerald-500"
-                      style={{ width: `${Math.min(100, (orgDocumentCount / 100) * 100)}%` }}
+                      style={{ width: `${docPercent}%` }}
                     />
                   </div>
                   <p className="mt-1 text-[10px] text-slate-500">
-                    {"Free プランは無制限"}
+                    {docLimit === null
+                      ? `${planName}プラン: 無制限`
+                      : `${planName}プラン: ${orgDocumentCount.toLocaleString("ja-JP")}/${docLimit.toLocaleString("ja-JP")} 件`}
                   </p>
                 </div>
               </div>
@@ -381,14 +409,19 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                   <div className="h-1.5 w-full rounded-full bg-slate-100">
                     <div
                       className="h-1.5 rounded-full bg-sky-500"
-                      style={{ width: `${Math.min(100, (members.length / 10) * 100)}%` }}
+                      style={{ width: `${seatPercent}%` }}
                     />
                   </div>
                   <p className="mt-1 text-[10px] text-slate-500">
-                    {"Free プランは 10 名まで"}
+                    {seatLimit === null
+                      ? `${planName}プラン: 無制限`
+                      : `${planName}プラン: ${members.length.toLocaleString("ja-JP")}/${seatLimit.toLocaleString("ja-JP")} 人`}
                   </p>
                 </div>
               </div>
+                  </>
+                );
+              })()}
 
               <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
                 <div className="flex items-center justify-between">

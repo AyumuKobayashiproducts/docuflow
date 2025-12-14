@@ -91,6 +91,7 @@ function getCategoryBadgeVariant(category: string): "default" | "primary" | "suc
 
 // File upload size limit (10MB)
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const BYTES_PER_MB = 1024 * 1024;
 
 // PDF / Word text extraction helper
 async function extractTextFromFile(file: File): Promise<string> {
@@ -271,10 +272,6 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
     const docLimit = await canCreateDocument(userId, activeOrgId, "ja");
     if (!docLimit.allowed) break;
 
-    const fileSizeMB = file.size / (1024 * 1024);
-    const storageLimit = await canUseStorage(userId, activeOrgId, fileSizeMB, "ja");
-    if (!storageLimit.allowed) break;
-
     let content: string;
     try {
       content = await extractTextFromFile(file);
@@ -282,6 +279,16 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
       continue;
     }
     if (!content) continue;
+
+    // ストレージ容量チェック（実際に保存する本文サイズで判定）
+    const contentSizeMB = new Blob([content]).size / BYTES_PER_MB;
+    const storageLimit = await canUseStorage(
+      userId,
+      activeOrgId,
+      contentSizeMB,
+      "ja",
+    );
+    if (!storageLimit.allowed) break;
 
     let title = "", category = "", summary = "";
     let tags: string[] = [];
@@ -455,6 +462,10 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     let similarDocuments: SimilarDocument[] = [];
     if (query && query.length >= 2) {
       try {
+        // ベクトル検索（埋め込み生成）はAI呼び出しとしてカウントし、月間上限を強制する
+        if (process.env.OPENAI_API_KEY) {
+          await ensureAndConsumeAICalls(userId, activeOrgId, 1, "ja");
+        }
         similarDocuments = await searchSimilarDocuments(query, userId, 0.5, 5);
       } catch (similarError) {
         console.error("[Dashboard] similar search error:", similarError);
