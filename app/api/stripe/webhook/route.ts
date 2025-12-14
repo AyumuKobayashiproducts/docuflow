@@ -67,6 +67,20 @@ async function logBillingActivity(params: {
   }
 }
 
+function formatSupabaseError(err: unknown) {
+  if (!err) return "unknown error";
+  if (typeof err === "string") return err;
+  try {
+    const anyErr = err as any;
+    const code = anyErr.code ? `code=${anyErr.code}` : "";
+    const message =
+      anyErr.message || anyErr.details || anyErr.hint || JSON.stringify(anyErr);
+    return [code, message].filter(Boolean).join(" ").trim();
+  } catch {
+    return String(err);
+  }
+}
+
 export async function POST(req: NextRequest) {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -217,7 +231,11 @@ export async function POST(req: NextRequest) {
             "[stripe/webhook] Failed to update organization billing info:",
             error,
           );
-          throw new Error("Failed to update organization billing info");
+          throw new Error(
+            `Failed to update organization billing info: ${formatSupabaseError(
+              error,
+            )}`,
+          );
         }
       }
 
@@ -243,7 +261,11 @@ export async function POST(req: NextRequest) {
             "[stripe/webhook] Failed to update user subscription info:",
             error,
           );
-          throw new Error("Failed to update user subscription info");
+          throw new Error(
+            `Failed to update user subscription info: ${formatSupabaseError(
+              error,
+            )}`,
+          );
         }
       }
 
@@ -327,7 +349,11 @@ export async function POST(req: NextRequest) {
             updateError,
           );
           // Stripe が再試行できるように 500 へ
-          throw new Error("Failed to update organization subscription");
+          throw new Error(
+            `Failed to update organization subscription: ${formatSupabaseError(
+              updateError,
+            )}`,
+          );
         }
       }
 
@@ -358,7 +384,11 @@ export async function POST(req: NextRequest) {
             "[stripe/webhook] Failed to update user subscription:",
             updateError,
           );
-          throw new Error("Failed to update user subscription");
+          throw new Error(
+            `Failed to update user subscription: ${formatSupabaseError(
+              updateError,
+            )}`,
+          );
         }
       }
 
@@ -415,7 +445,11 @@ export async function POST(req: NextRequest) {
             "[stripe/webhook] Failed to downgrade organization:",
             downgradeError,
           );
-          throw new Error("Failed to downgrade organization");
+          throw new Error(
+            `Failed to downgrade organization: ${formatSupabaseError(
+              downgradeError,
+            )}`,
+          );
         }
       }
 
@@ -446,7 +480,9 @@ export async function POST(req: NextRequest) {
             "[stripe/webhook] Failed to downgrade user:",
             downgradeError,
           );
-          throw new Error("Failed to downgrade user");
+          throw new Error(
+            `Failed to downgrade user: ${formatSupabaseError(downgradeError)}`,
+          );
         }
       }
 
