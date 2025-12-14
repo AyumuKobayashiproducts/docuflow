@@ -121,10 +121,16 @@ export function SubscriptionPlans({
 
   const formatCurrency = (currency: string, amount: number) => {
     try {
+      // Stripe の unit_amount は最小通貨単位（例: USDならセント）なので、通貨の小数桁に合わせて正規化する
+      const exp = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currency.toUpperCase(),
+      }).resolvedOptions().maximumFractionDigits ?? 2;
+      const major = amount / Math.pow(10, exp);
       return new Intl.NumberFormat("ja-JP", {
         style: "currency",
         currency: currency.toUpperCase(),
-      }).format(amount);
+      }).format(major);
     } catch {
       // fallback
       return `${amount.toLocaleString()} ${currency.toUpperCase()}`;

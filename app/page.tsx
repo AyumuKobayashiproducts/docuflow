@@ -56,10 +56,16 @@ export default async function Home() {
 
   const formatCurrency = (currency: string, amount: number) => {
     try {
+      // Stripe の unit_amount は最小通貨単位（例: USDならセント）
+      const exp = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currency.toUpperCase(),
+      }).resolvedOptions().maximumFractionDigits ?? 2;
+      const major = amount / Math.pow(10, exp);
       return new Intl.NumberFormat("ja-JP", {
         style: "currency",
         currency: currency.toUpperCase(),
-      }).format(amount);
+      }).format(major);
     } catch {
       return `${amount.toLocaleString()} ${currency.toUpperCase()}`;
     }
