@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { checkRateLimit } from "@/lib/rateLimiter";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,12 @@ export async function GET() {
       },
       { status: 500 },
     );
+  }
+
+  // 乱打・誤操作で重いエクスポートを連発されないように簡易レート制限（デモ用途）
+  const rateKey = `export:${userId}`;
+  if (!checkRateLimit(rateKey, 10)) {
+    return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
   }
 
   // NOTE:
