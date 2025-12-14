@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabaseClient";
+import { BillingScopeError, getBillingScopeOrThrow } from "@/lib/billingScope";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-06-20",
@@ -26,26 +27,8 @@ export async function GET(req: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "12", 10);
 
   try {
-    let customerId: string | null = null;
-
-    if (type === "organization") {
-      const { data: orgs } = await supabase
-        .from("organizations")
-        .select("stripe_customer_id")
-        .eq("owner_id", userId)
-        .order("created_at", { ascending: true })
-        .limit(1);
-
-      customerId = orgs?.[0]?.stripe_customer_id || null;
-    } else {
-      const { data: userSettings } = await supabase
-        .from("user_settings")
-        .select("stripe_customer_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      customerId = userSettings?.stripe_customer_id || null;
-    }
+    const scope = await getBillingScopeOrThrow(userId, type);
+    const customerId = scope.customerId;
 
     if (!customerId) {
       return NextResponse.json({ invoices: [] });
@@ -81,7 +64,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { invoiceId } = body as { invoiceId: string };
+  const { invoiceId, type } = body as {
+    invoiceId: string;
+    type?: "personal" | "organization";
+  };
 
   if (!invoiceId) {
     return NextResponse.json(
@@ -91,7 +77,26 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    const scope = await getBillingScopeOrThrow(userId, type ?? null);
+    const customerId = scope.customerId;
+    if (!customerId) {
+      return NextResponse.json(
+        { error: "No billing customer found" },
+        { status: 400 },
+      );
+    }
+
     const invoice = await stripe.invoices.retrieve(invoiceId);
+    const invCustomer =
+      typeof invoice.customer === "string"
+        ? invoice.customer
+        : (invoice.customer as { id?: string } | null)?.id ?? null;
+    if (!invCustomer || invCustomer !== customerId) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 },
+      );
+    }
 
     if (!invoice.invoice_pdf) {
       return NextResponse.json(
@@ -103,6 +108,9 @@ export async function POST(req: NextRequest) {
     // PDFのURLを返す（Stripeが生成したPDF）
     return NextResponse.json({ pdfUrl: invoice.invoice_pdf });
   } catch (error) {
+    if (error instanceof BillingScopeError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Failed to get invoice PDF:", error);
     return NextResponse.json(
       { error: "Failed to get invoice PDF" },

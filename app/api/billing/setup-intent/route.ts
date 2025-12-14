@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabaseClient";
+import { BillingScopeError, getBillingScopeOrThrow } from "@/lib/billingScope";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-06-20",
@@ -26,26 +27,8 @@ export async function POST(req: NextRequest) {
   const { type } = body as { type?: "personal" | "organization" };
 
   try {
-    let customerId: string | null = null;
-
-    if (type === "organization") {
-      const { data: orgs } = await supabase
-        .from("organizations")
-        .select("stripe_customer_id")
-        .eq("owner_id", userId)
-        .order("created_at", { ascending: true })
-        .limit(1);
-
-      customerId = orgs?.[0]?.stripe_customer_id || null;
-    } else {
-      const { data: userSettings } = await supabase
-        .from("user_settings")
-        .select("stripe_customer_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      customerId = userSettings?.stripe_customer_id || null;
-    }
+    const scope = await getBillingScopeOrThrow(userId, type ?? null);
+    let customerId: string | null = scope.customerId;
 
     // Customerが存在しない場合は作成
     if (!customerId) {
@@ -53,25 +36,19 @@ export async function POST(req: NextRequest) {
         metadata: {
           user_id: userId,
           type: type || "personal",
+          ...(scope.type === "organization"
+            ? { organization_id: scope.organizationId }
+            : {}),
         },
       });
       customerId = customer.id;
 
       // DBに保存
-      if (type === "organization") {
-        const { data: orgs } = await supabase
+      if (scope.type === "organization") {
+        await supabase
           .from("organizations")
-          .select("id")
-          .eq("owner_id", userId)
-          .order("created_at", { ascending: true })
-          .limit(1);
-
-        if (orgs?.[0]) {
-          await supabase
-            .from("organizations")
-            .update({ stripe_customer_id: customerId })
-            .eq("id", orgs[0].id);
-        }
+          .update({ stripe_customer_id: customerId })
+          .eq("id", scope.organizationId);
       } else {
         await supabase
           .from("user_settings")
@@ -96,6 +73,9 @@ export async function POST(req: NextRequest) {
       customerId,
     });
   } catch (error) {
+    if (error instanceof BillingScopeError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Failed to create setup intent:", error);
     return NextResponse.json(
       { error: "Failed to create setup intent" },

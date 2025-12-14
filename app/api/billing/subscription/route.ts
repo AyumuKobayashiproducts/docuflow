@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabaseClient";
 import { PLAN_LIMITS, type SubscriptionPlan } from "@/lib/subscription";
+import { BillingScopeError, getBillingScopeOrThrow } from "@/lib/billingScope";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-06-20",
@@ -26,26 +27,8 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get("type") as "personal" | "organization" | null;
 
   try {
-    let customerId: string | null = null;
-
-    if (type === "organization") {
-      const { data: orgs } = await supabase
-        .from("organizations")
-        .select("stripe_customer_id, stripe_subscription_id")
-        .eq("owner_id", userId)
-        .order("created_at", { ascending: true })
-        .limit(1);
-
-      customerId = orgs?.[0]?.stripe_customer_id || null;
-    } else {
-      const { data: userSettings } = await supabase
-        .from("user_settings")
-        .select("stripe_customer_id, stripe_subscription_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      customerId = userSettings?.stripe_customer_id || null;
-    }
+    const scope = await getBillingScopeOrThrow(userId, type);
+    const customerId = scope.customerId;
 
     if (!customerId) {
       return NextResponse.json({
@@ -123,34 +106,21 @@ export async function PATCH(req: NextRequest) {
   };
 
   try {
-    // サブスクリプションIDを取得
-    let currentSubscriptionId: string | null = null;
-
-    if (type === "organization") {
-      const { data: orgs } = await supabase
-        .from("organizations")
-        .select("stripe_subscription_id")
-        .eq("owner_id", userId)
-        .order("created_at", { ascending: true })
-        .limit(1);
-
-      currentSubscriptionId = orgs?.[0]?.stripe_subscription_id || null;
-    } else {
-      const { data: userSettings } = await supabase
-        .from("user_settings")
-        .select("stripe_subscription_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      currentSubscriptionId = userSettings?.stripe_subscription_id || null;
-    }
-
-    const subId = subscriptionId || currentSubscriptionId;
+    const scope = await getBillingScopeOrThrow(userId, type ?? null);
+    const subId = scope.subscriptionId;
 
     if (!subId) {
       return NextResponse.json(
         { error: "No active subscription found" },
         { status: 400 },
+      );
+    }
+
+    // クライアントから渡された subscriptionId は信用しない（改ざん対策）
+    if (subscriptionId && subscriptionId !== subId) {
+      return NextResponse.json(
+        { error: "Subscription mismatch" },
+        { status: 403 },
       );
     }
 
@@ -212,6 +182,9 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof BillingScopeError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error("Failed to update subscription:", error);
     return NextResponse.json(
       { error: "Failed to update subscription" },
