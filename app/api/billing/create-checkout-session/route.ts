@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabaseClient";
-import { PLAN_LIMITS, type SubscriptionPlan } from "@/lib/subscription";
+import type { SubscriptionPlan } from "@/lib/subscription";
+import { getActiveOrganizationId } from "@/lib/organizations";
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
@@ -62,14 +63,45 @@ export async function POST(req: NextRequest) {
 
     // 組織プランの場合
     if (type === "organization") {
-      const { data: orgs, error: orgError } = await supabase
+      const activeOrgId = await getActiveOrganizationId(userId);
+      if (!activeOrgId) {
+        return NextResponse.json(
+          { error: "No active organization found. Please create or select one." },
+          { status: 400 },
+        );
+      }
+
+      // 課金は owner/admin のみ（member は不可）
+      const { data: membership, error: membershipError } = await supabase
+        .from("organization_members")
+        .select("role")
+        .eq("organization_id", activeOrgId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (membershipError) {
+        console.error("Failed to check organization role for billing:", membershipError);
+        return NextResponse.json(
+          { error: "Failed to verify organization role" },
+          { status: 500 },
+        );
+      }
+
+      const role = (membership as { role?: string } | null)?.role;
+      if (!role || role === "member") {
+        return NextResponse.json(
+          { error: "You don't have permission to manage billing for this organization." },
+          { status: 403 },
+        );
+      }
+
+      const { data: org, error: orgError } = await supabase
         .from("organizations")
         .select("id, name")
-        .eq("owner_id", userId)
-        .order("created_at", { ascending: true })
-        .limit(1);
+        .eq("id", activeOrgId)
+        .maybeSingle();
 
-      if (orgError) {
+      if (orgError || !org) {
         console.error("Failed to fetch organization for billing:", orgError);
         return NextResponse.json(
           { error: "Failed to load organization" },
@@ -77,17 +109,8 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const org = orgs?.[0];
-
-      if (!org) {
-        return NextResponse.json(
-          { error: "No organization found. Please create one first." },
-          { status: 400 },
-        );
-      }
-
       metadata.organization_id = org.id;
-      metadata.organization_name = org.name;
+      metadata.organization_name = (org as { name?: string | null }).name ?? "";
     } else {
       // 個人プランの場合
       metadata.user_id = userId;
