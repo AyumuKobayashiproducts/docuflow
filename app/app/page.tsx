@@ -161,10 +161,19 @@ type ActivityLog = {
 // Server Actions
 async function toggleFavorite(formData: FormData) {
   "use server";
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  if (!userId) {
+    throw new Error("ログインしてください。");
+  }
   const id = String(formData.get("id") ?? "");
   const next = String(formData.get("next") ?? "") === "true";
   if (!id) return;
-  const { error } = await supabase.from("documents").update({ is_favorite: next }).eq("id", id);
+  const { error } = await supabase
+    .from("documents")
+    .update({ is_favorite: next })
+    .eq("id", id)
+    .eq("user_id", userId);
   if (error) throw new Error(`Failed to update favorite: ${error.message}`);
   await logActivity("toggle_favorite", { documentId: id, details: next ? "on" : "off" });
   revalidatePath("/app");
@@ -172,10 +181,19 @@ async function toggleFavorite(formData: FormData) {
 
 async function togglePinned(formData: FormData) {
   "use server";
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  if (!userId) {
+    throw new Error("ログインしてください。");
+  }
   const id = String(formData.get("id") ?? "");
   const next = String(formData.get("next") ?? "") === "true";
   if (!id) return;
-  const { error } = await supabase.from("documents").update({ is_pinned: next }).eq("id", id);
+  const { error } = await supabase
+    .from("documents")
+    .update({ is_pinned: next })
+    .eq("id", id)
+    .eq("user_id", userId);
   if (error) throw new Error(`Failed to update pinned: ${error.message}`);
   await logActivity("toggle_pinned", { documentId: id, details: next ? "on" : "off" });
   revalidatePath("/app");
@@ -320,7 +338,7 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
     const created = Array.isArray(data) && data.length > 0 ? data[0] : null;
     if (created?.id) {
       await logActivity("create_document", { documentId: String(created.id), documentTitle: title });
-      updateDocumentEmbedding(String(created.id), content).catch(console.error);
+      updateDocumentEmbedding(String(created.id), content, userId).catch(console.error);
     }
   }
   revalidatePath("/app");

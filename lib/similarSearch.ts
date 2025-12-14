@@ -59,9 +59,14 @@ export async function searchSimilarDocuments(
  */
 export async function updateDocumentEmbedding(
   documentId: string,
-  content: string
+  content: string,
+  userId: string | null
 ): Promise<void> {
   if (!content.trim()) {
+    return;
+  }
+  if (!userId) {
+    // user_id が取れない状態では更新しない（安全側）
     return;
   }
 
@@ -71,7 +76,8 @@ export async function updateDocumentEmbedding(
     const { error } = await supabase
       .from("documents")
       .update({ embedding })
-      .eq("id", documentId);
+      .eq("id", documentId)
+      .eq("user_id", userId);
 
     if (error) {
       console.error("Failed to update document embedding:", error);

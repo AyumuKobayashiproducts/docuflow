@@ -258,7 +258,7 @@ async function createDocument(formData: FormData) {
     });
 
     // 埋め込みベクトルを生成・保存（AI処理と並行して実行）
-    updateDocumentEmbedding(String(created.id), content).catch(console.error);
+    updateDocumentEmbedding(String(created.id), content, userId).catch(console.error);
   }
 
   redirect("/");

@@ -24,7 +24,9 @@ vi.mock("../lib/supabaseClient", () => ({
         }),
       }),
       update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
       }),
     }),
     rpc: vi.fn().mockResolvedValue({
@@ -103,7 +105,7 @@ describe("similarSearch", () => {
       const { updateDocumentEmbedding } = await import("../lib/similarSearch");
       const { supabase } = await import("../lib/supabaseClient");
 
-      await updateDocumentEmbedding("doc-123", "");
+      await updateDocumentEmbedding("doc-123", "", "user-123");
 
       expect(supabase.from).not.toHaveBeenCalled();
     });
@@ -112,7 +114,7 @@ describe("similarSearch", () => {
       const { updateDocumentEmbedding } = await import("../lib/similarSearch");
       const { supabase } = await import("../lib/supabaseClient");
 
-      await updateDocumentEmbedding("doc-123", "   ");
+      await updateDocumentEmbedding("doc-123", "   ", "user-123");
 
       expect(supabase.from).not.toHaveBeenCalled();
     });
@@ -121,9 +123,18 @@ describe("similarSearch", () => {
       const { updateDocumentEmbedding } = await import("../lib/similarSearch");
       const { supabase } = await import("../lib/supabaseClient");
 
-      await updateDocumentEmbedding("doc-123", "有効なコンテンツです");
+      await updateDocumentEmbedding("doc-123", "有効なコンテンツです", "user-123");
 
       expect(supabase.from).toHaveBeenCalledWith("documents");
+    });
+
+    it("userId が null の場合は安全側で更新しない", async () => {
+      const { updateDocumentEmbedding } = await import("../lib/similarSearch");
+      const { supabase } = await import("../lib/supabaseClient");
+
+      await updateDocumentEmbedding("doc-123", "有効なコンテンツです", null);
+
+      expect(supabase.from).not.toHaveBeenCalled();
     });
   });
 
