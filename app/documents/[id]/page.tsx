@@ -146,18 +146,28 @@ async function enableShare(formData: FormData) {
 
   const organizationId = (meta as { organization_id?: string | null } | null)
     ?.organization_id ?? null;
-  const { limits } = await getEffectivePlan(userId, organizationId);
+  const { plan, limits } = await getEffectivePlan(userId, organizationId);
   if (!limits.shareLinks) {
     throw new Error("共有リンク機能は現在のプランでは利用できません。");
   }
 
   const token = randomUUID();
+  // セキュリティ: 共有リンクはプランに応じて期限を付ける（漏洩リスク低減）
+  // - free: 7日
+  // - pro: 30日
+  // - team/enterprise: 無期限（必要なら後でUIで設定可能にする）
+  const shareExpiresAt =
+    plan === "free"
+      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      : plan === "pro"
+        ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        : null;
 
   const { error } = await supabase
     .from("documents")
     .update({
       share_token: token,
-      share_expires_at: null,
+      share_expires_at: shareExpiresAt,
     })
     .eq("id", id)
     .eq("user_id", userId);
