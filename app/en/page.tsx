@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Check, ArrowRight, Sparkles, Shield, BarChart3 } from "lucide-react";
 
@@ -16,9 +15,6 @@ export const metadata: Metadata = {
 export default async function HomeEn() {
   const cookieStore = await cookies();
   const isAuthed = cookieStore.get("docuhub_ai_auth")?.value === "1";
-  if (isAuthed) {
-    redirect("/app");
-  }
 
   // Best-effort: keep LP pricing aligned with Stripe (fallback if unavailable)
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -116,18 +112,29 @@ export default async function HomeEn() {
               </a>
             </nav>
             <div className="flex items-center gap-3">
-              <Link
-                href="/auth/login"
-                className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-4 py-2"
-              >
-                Log in
-              </Link>
-              <Link
-                href="/auth/signup"
-                className="text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2.5 rounded-full transition-all hover:shadow-lg hover:shadow-emerald-500/25"
-              >
-                Start free trial
-              </Link>
+              {isAuthed ? (
+                <Link
+                  href="/app"
+                  className="text-sm font-semibold bg-white text-slate-900 px-5 py-2.5 rounded-full transition-all hover:bg-white/90"
+                >
+                  Open app
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-4 py-2"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/auth/signup"
+                    className="text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2.5 rounded-full transition-all hover:shadow-lg hover:shadow-emerald-500/25"
+                  >
+                    Start free trial
+                  </Link>
+                </>
+              )}
               <Link
                 href="/"
                 className="text-[11px] font-medium text-slate-500 hover:text-slate-300 transition-colors border border-slate-700 rounded-full px-2 py-0.5"

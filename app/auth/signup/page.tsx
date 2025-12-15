@@ -322,7 +322,9 @@ export default function SignupPage() {
                 >
                   <>
                     <Link
-                      href="#"
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
                     >
                       利用規約
@@ -331,7 +333,9 @@ export default function SignupPage() {
                       と
                     </span>
                     <Link
-                      href="#"
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
                     >
                       プライバシーポリシー
