@@ -16,7 +16,7 @@ import { ensureAndConsumeAICalls } from "@/lib/aiUsage";
 import { Logo } from "@/components/Logo";
 import { NewSubmitButtons } from "@/components/NewSubmitButtons";
 import { NewFileDropZone } from "@/components/NewFileDropZone";
-import type { Locale } from "@/lib/i18n";
+import { getLocaleFromParam, type Locale } from "@/lib/i18n";
 
 // 検索クエリ () によって内容が変わるため、静的生成ではなく毎回評価する
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 const BYTES_PER_MB = 1024 * 1024;
 
-async function extractTextFromFile(file: File): Promise<string> {
+async function extractTextFromFile(file: File, locale: Locale): Promise<string> {
   const filename = file.name.toLowerCase();
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
@@ -42,7 +42,9 @@ async function extractTextFromFile(file: File): Promise<string> {
   }
 
   throw new Error(
-    "サポートされていないファイル形式です。PDF / DOC / DOCX のみ対応しています。"
+    locale === "en"
+      ? "Unsupported file format. Only PDF / DOC / DOCX are supported."
+      : "サポートされていないファイル形式です。PDF / DOC / DOCX のみ対応しています。",
   );
 }
 
@@ -50,10 +52,10 @@ async function extractTextFromFile(file: File): Promise<string> {
 async function fastCreateDocument(formData: FormData) {
   "use server";
 
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
   const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
-  const locale: Locale = "ja";
 
   let title = String(formData.get("title") ?? "").trim();
   let category = String(formData.get("category") ?? "").trim();
@@ -64,14 +66,23 @@ async function fastCreateDocument(formData: FormData) {
 
   if (file instanceof File && file.size > 0) {
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      console.error("アップロードされたファイルが大きすぎます（最大 10MB まで）。");
+      console.error(
+        locale === "en"
+          ? "Uploaded file is too large (max 10MB)."
+          : "アップロードされたファイルが大きすぎます（最大 10MB まで）。",
+      );
       return;
     }
 
     try {
-      content = await extractTextFromFile(file);
+      content = await extractTextFromFile(file, locale);
     } catch (e) {
-      console.error("ファイルからテキストを抽出できませんでした:", e);
+      console.error(
+        locale === "en"
+          ? "Failed to extract text from the file:"
+          : "ファイルからテキストを抽出できませんでした:",
+        e,
+      );
       return;
     }
   }
@@ -99,10 +110,10 @@ async function fastCreateDocument(formData: FormData) {
   }
 
   if (!title) {
-    title = content.slice(0, 30) || "無題ドキュメント";
+    title = content.slice(0, 30) || (locale === "en" ? "Untitled document" : "無題ドキュメント");
   }
   if (!category) {
-    category = "未分類";
+    category = locale === "en" ? "Uncategorized" : "未分類";
   }
 
   const { data, error } = await supabase
@@ -136,17 +147,16 @@ async function fastCreateDocument(formData: FormData) {
     // 埋め込み生成（OpenAI呼び出し）はAI使用量の抜け道になり得るため、ここでは実行しない。
   }
 
-  redirect("/");
+  redirect(locale === "en" ? "/app?lang=en" : "/app");
 }
 
 async function createDocument(formData: FormData) {
   "use server";
 
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
   const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
-  // 日本語専用
-  const locale: Locale = "ja";
 
   let title = String(formData.get("title") ?? "").trim();
   let category = String(formData.get("category") ?? "").trim();
@@ -157,14 +167,23 @@ async function createDocument(formData: FormData) {
 
   if (file instanceof File && file.size > 0) {
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      console.error("アップロードされたファイルが大きすぎます（最大 10MB まで）。");
+      console.error(
+        locale === "en"
+          ? "Uploaded file is too large (max 10MB)."
+          : "アップロードされたファイルが大きすぎます（最大 10MB まで）。",
+      );
       return;
     }
 
     try {
-      content = await extractTextFromFile(file);
+      content = await extractTextFromFile(file, locale);
     } catch (e) {
-      console.error("ファイルからテキストを抽出できませんでした:", e);
+      console.error(
+        locale === "en"
+          ? "Failed to extract text from the file:"
+          : "ファイルからテキストを抽出できませんでした:",
+        e,
+      );
       return;
     }
   }
@@ -216,17 +235,22 @@ async function createDocument(formData: FormData) {
     ]);
 
     title =
-      (generatedTitle || title || content.slice(0, 30)) || "無題ドキュメント";
-    category = (generatedCategory || category || "未分類") || "未分類";
+      (generatedTitle || title || content.slice(0, 30)) ||
+      (locale === "en" ? "Untitled document" : "無題ドキュメント");
+    category =
+      (generatedCategory ||
+        category ||
+        (locale === "en" ? "Uncategorized" : "未分類")) ||
+      (locale === "en" ? "Uncategorized" : "未分類");
     summary = generated.summary;
     tags = generated.tags;
   } catch (e) {
     console.error("AI generate error in createDocument:", e);
     if (!title) {
-      title = content.slice(0, 30) || "無題ドキュメント";
+      title = content.slice(0, 30) || (locale === "en" ? "Untitled document" : "無題ドキュメント");
     }
     if (!category) {
-      category = "未分類";
+      category = locale === "en" ? "Uncategorized" : "未分類";
     }
   }
 
@@ -236,7 +260,7 @@ async function createDocument(formData: FormData) {
       user_id: userId,
       organization_id: activeOrgId,
       title,
-      category: category || "未分類",
+      category: category || (locale === "en" ? "Uncategorized" : "未分類"),
       raw_content: content,
       summary,
       tags,
@@ -261,9 +285,27 @@ async function createDocument(formData: FormData) {
     updateDocumentEmbedding(String(created.id), content, userId).catch(console.error);
   }
 
-  redirect("/");
+  redirect(locale === "en" ? "/app?lang=en" : "/app");
 }
-export default async function NewDocumentPage() {
+type NewPageProps = {
+  searchParams?:
+    | {
+        lang?: string;
+      }
+    | Promise<{
+        lang?: string;
+      }>;
+};
+
+export default async function NewDocumentPage({ searchParams }: NewPageProps) {
+  const params = searchParams ? await searchParams : undefined;
+  const locale: Locale = getLocaleFromParam(params?.lang);
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/20">
@@ -280,11 +322,15 @@ export default async function NewDocumentPage() {
           <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
             <Logo
               withTagline
-              tagline={"新しいドキュメントを作成して AI 要約を試す"}
+              tagline={
+                locale === "en"
+                  ? "Create a document and try AI summaries"
+                  : "新しいドキュメントを作成して AI 要約を試す"
+              }
             />
             <nav className="flex items-center gap-3">
               <Link
-                href={"/app"}
+                href={withLang("/app")}
                 className="btn btn-secondary text-xs"
               >
                 <svg
@@ -301,7 +347,7 @@ export default async function NewDocumentPage() {
                   />
                 </svg>
                 <span>
-                  {"一覧に戻る"}
+                  {locale === "en" ? "Back to list" : "一覧に戻る"}
                 </span>
               </Link>
             </nav>
@@ -312,10 +358,12 @@ export default async function NewDocumentPage() {
           {/* Page Header */}
           <div className="mb-8 animate-fade-in">
             <h1 className="text-2xl font-bold text-slate-900">
-              {"新規ドキュメント"}
+              {locale === "en" ? "New document" : "新規ドキュメント"}
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              {"テキストを入力するか、PDF / Word ファイルをアップロードしてドキュメントを作成"}
+              {locale === "en"
+                ? "Create a document by typing text or uploading a PDF / Word file."
+                : "テキストを入力するか、PDF / Word ファイルをアップロードしてドキュメントを作成"}
             </p>
           </div>
 
@@ -323,6 +371,7 @@ export default async function NewDocumentPage() {
             {/* Main Form */}
             <div className="card p-6 lg:p-8 animate-fade-in-up">
               <form className="space-y-6" action={createDocument}>
+                <input type="hidden" name="lang" value={locale} />
                 {/* Title */}
                 <div>
                   <label
@@ -332,15 +381,21 @@ export default async function NewDocumentPage() {
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
                       📝
                     </span>
-                    {"タイトル"}
+                    {locale === "en" ? "Title" : "タイトル"}
                     <span className="text-xs font-normal text-slate-400">
-                      {"（空欄ならAIが自動生成）"}
+                      {locale === "en"
+                        ? "(Optional — AI can generate)"
+                        : "（空欄ならAIが自動生成）"}
                     </span>
                   </label>
                   <input
                     id="title"
                     name="title"
-                    placeholder={"例: プロダクト要件定義書"}
+                    placeholder={
+                      locale === "en"
+                        ? "e.g. Product requirements"
+                        : "例: プロダクト要件定義書"
+                    }
                     className="input"
                   />
                 </div>
@@ -354,15 +409,21 @@ export default async function NewDocumentPage() {
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
                       🏷️
                     </span>
-                    {"カテゴリ"}
+                    {locale === "en" ? "Category" : "カテゴリ"}
                     <span className="text-xs font-normal text-slate-400">
-                      {"（空欄ならAIが自動判定）"}
+                      {locale === "en"
+                        ? "(Optional — AI can infer)"
+                        : "（空欄ならAIが自動判定）"}
                     </span>
                   </label>
                   <input
                     id="category"
                     name="category"
-                    placeholder={"例: 仕様書 / 議事録 / 企画書"}
+                    placeholder={
+                      locale === "en"
+                        ? "e.g. Spec / Meeting notes / Proposal"
+                        : "例: 仕様書 / 議事録 / 企画書"
+                    }
                     className="input"
                   />
                 </div>
@@ -376,16 +437,22 @@ export default async function NewDocumentPage() {
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
                       📄
                     </span>
-                    {"本文"}
+                    {locale === "en" ? "Content" : "本文"}
                   </label>
                   <p className="mb-3 text-xs text-slate-500">
-                    {"この本文をもとにAIが要約とタグ（最大3つ）を自動生成します。ファイルをアップロードした場合は、抽出されたテキストが自動で保存されます。"}
+                    {locale === "en"
+                      ? "DocuFlow can generate a summary and up to 3 tags from this content. If you upload a file, extracted text will be saved automatically."
+                      : "この本文をもとにAIが要約とタグ（最大3つ）を自動生成します。ファイルをアップロードした場合は、抽出されたテキストが自動で保存されます。"}
                   </p>
                   <textarea
                     id="rawContent"
                     name="rawContent"
                     rows={14}
-                    placeholder={"ドキュメントの本文を入力またはペーストしてください..."}
+                    placeholder={
+                      locale === "en"
+                        ? "Paste or type your document content..."
+                        : "ドキュメントの本文を入力またはペーストしてください..."
+                    }
                     className="input resize-none font-mono text-sm"
                   />
                 </div>
@@ -396,10 +463,12 @@ export default async function NewDocumentPage() {
                     <span className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 text-xs">
                       📁
                     </span>
-                    {"ファイルアップロード"}
+                    {locale === "en" ? "File upload" : "ファイルアップロード"}
                   </label>
                   <p className="mb-3 text-xs text-slate-500">
-                    {"PDF / Word（.doc, .docx）に対応。最大10MBまで。"}
+                    {locale === "en"
+                      ? "Supports PDF / Word (.doc, .docx). Max 10MB."
+                      : "PDF / Word（.doc, .docx）に対応。最大10MBまで。"}
                   </p>
                   <input
                     id="file"
@@ -415,14 +484,16 @@ export default async function NewDocumentPage() {
                 <div className="border-t border-slate-200 pt-6">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <p className="text-xs text-slate-500">
-                      {"💡 AI要約ありは処理に数秒かかります。急ぎの場合は「高速保存」をお使いください。"}
+                      {locale === "en"
+                        ? "Tip: AI summary may take a few seconds. Use “Save without AI” if you’re in a hurry."
+                        : "💡 AI要約ありは処理に数秒かかります。急ぎの場合は「高速保存」をお使いください。"}
                     </p>
                     <div className="flex items-center gap-3">
                       <button
                         type="reset"
                         className="btn btn-secondary text-xs"
                       >
-                        {"クリア"}
+                        {locale === "en" ? "Clear" : "クリア"}
                       </button>
                       <NewSubmitButtons
                         fastAction={fastCreateDocument}
@@ -443,40 +514,50 @@ export default async function NewDocumentPage() {
                     ✨
                   </div>
                   <h3 className="font-semibold text-slate-900">
-                    {"AI機能について"}
+                    {locale === "en" ? "About AI features" : "AI機能について"}
                   </h3>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  {"DocuFlowは GPT-4 を活用して、ドキュメントの要約・タグ付け・タイトル生成を自動で行います。日本語の業務ドキュメントに最適化されています。"}
+                  {locale === "en"
+                    ? "DocuFlow uses GPT to generate summaries, tags, and titles. It’s designed to turn documents into searchable knowledge."
+                    : "DocuFlowは GPT-4 を活用して、ドキュメントの要約・タグ付け・タイトル生成を自動で行います。日本語の業務ドキュメントに最適化されています。"}
                 </p>
               </div>
 
               {/* Process Steps */}
               <div className="card p-5">
                 <h3 className="font-semibold text-slate-900 mb-4">
-                  {"処理の流れ"}
+                  {locale === "en" ? "How it works" : "処理の流れ"}
                 </h3>
                 <ol className="space-y-3">
                   {[
                     {
                       icon: "1️⃣",
                       text:
-                        "テキスト入力 or ファイルアップロード",
+                        (locale === "en"
+                          ? "Type text or upload a file"
+                          : "テキスト入力 or ファイルアップロード"),
                     },
                     {
                       icon: "2️⃣",
                       text:
-                        "AIが本文を解析して要約を生成",
+                        (locale === "en"
+                          ? "AI generates a summary"
+                          : "AIが本文を解析して要約を生成"),
                     },
                     {
                       icon: "3️⃣",
                       text:
-                        "関連タグ（最大3つ）を自動抽出",
+                        (locale === "en"
+                          ? "AI extracts up to 3 tags"
+                          : "関連タグ（最大3つ）を自動抽出"),
                     },
                     {
                       icon: "4️⃣",
                       text:
-                        "データベースに保存して一覧に反映",
+                        (locale === "en"
+                          ? "Saved and shown on your dashboard"
+                          : "データベースに保存して一覧に反映"),
                     },
                   ].map((step, i) => (
                     <li
@@ -494,25 +575,31 @@ export default async function NewDocumentPage() {
               <div className="card p-5 bg-gradient-to-br from-amber-50/50 to-orange-50/50">
                 <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
                   <span>💡</span>
-                  {"おすすめの使い方"}
+                  {locale === "en" ? "Tips" : "おすすめの使い方"}
                 </h3>
                 <ul className="space-y-2 text-xs text-slate-600">
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500">•</span>
                     <span>
-                      {"長いPDF資料をアップロードして要点だけを素早く把握"}
+                      {locale === "en"
+                        ? "Upload long PDFs and skim key points fast"
+                        : "長いPDF資料をアップロードして要点だけを素早く把握"}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500">•</span>
                     <span>
-                      {"会議の議事録を貼り付けて検索しやすいタグを自動付与"}
+                      {locale === "en"
+                        ? "Paste meeting notes and get searchable tags"
+                        : "会議の議事録を貼り付けて検索しやすいタグを自動付与"}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-amber-500">•</span>
                     <span>
-                      {"社内ナレッジをカテゴリごとに整理してストック"}
+                      {locale === "en"
+                        ? "Organize internal knowledge by category"
+                        : "社内ナレッジをカテゴリごとに整理してストック"}
                     </span>
                   </li>
                 </ul>
@@ -521,7 +608,7 @@ export default async function NewDocumentPage() {
               {/* Supported Formats */}
               <div className="card p-5">
                 <h3 className="font-semibold text-slate-900 mb-3">
-                  {"対応フォーマット"}
+                  {locale === "en" ? "Supported formats" : "対応フォーマット"}
                 </h3>
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -538,7 +625,7 @@ export default async function NewDocumentPage() {
                   ))}
                 </div>
                 <p className="mt-3 text-[11px] text-slate-500">
-                  {"最大ファイルサイズ: 10MB"}
+                  {locale === "en" ? "Max file size: 10MB" : "最大ファイルサイズ: 10MB"}
                 </p>
               </div>
             </aside>
