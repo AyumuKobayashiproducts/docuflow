@@ -20,6 +20,12 @@ import {
 import { canAddMember } from "@/lib/subscription";
 import type { Locale } from "@/lib/i18n";
 
+function getDbClient() {
+  // server-side では service_role を優先（RLSや auth セッション未導入でも運用できるようにする）
+  // NOTE: client-side からこの関数が呼ばれない前提（Server Actions / Route Handlers / Server Components）
+  return supabaseAdmin ?? supabase;
+}
+
 // メンバーシップ（所属情報）
 export type OrganizationMembership = {
   organization_id: string;
@@ -62,7 +68,8 @@ export async function getUserOrganizations(
     return [];
   }
 
-  const { data, error } = await supabase
+  const client = getDbClient();
+  const { data, error } = await client
     .from("organization_members")
     .select(
       `
@@ -151,6 +158,8 @@ export async function createOrganization(
   name: string,
   slug?: string
 ): Promise<{ organization: Organization | null; error: string | null }> {
+  const client = getDbClient();
+
   // slugが未指定の場合、nameからslugを生成
   const orgSlug =
     slug ||
@@ -161,9 +170,9 @@ export async function createOrganization(
     `org-${Date.now()}`;
 
   // 組織を作成
-  const { data: org, error: orgError } = await supabase
+  const { data: org, error: orgError } = await client
     .from("organizations")
-    .insert({ name, slug: orgSlug })
+    .insert({ name, slug: orgSlug, owner_id: userId })
     .select()
     .single();
 
@@ -173,7 +182,7 @@ export async function createOrganization(
   }
 
   // 作成者をownerとして追加
-  const { error: memberError } = await supabase
+  const { error: memberError } = await client
     .from("organization_members")
     .insert({
       organization_id: org.id,
@@ -184,7 +193,7 @@ export async function createOrganization(
   if (memberError) {
     console.error("createOrganization member error:", memberError);
     // 組織は作成されたがメンバー追加に失敗した場合、組織も削除
-    await supabase.from("organizations").delete().eq("id", org.id);
+    await client.from("organizations").delete().eq("id", org.id);
     return { organization: null, error: "メンバー登録に失敗しました。" };
   }
 
@@ -197,7 +206,8 @@ export async function createOrganization(
 export async function getOrganizationMembers(
   organizationId: string
 ): Promise<OrganizationMember[]> {
-  const { data, error } = await supabase
+  const client = getDbClient();
+  const { data, error } = await client
     .from("organization_members")
     .select("user_id, role, created_at")
     .eq("organization_id", organizationId)
@@ -218,7 +228,8 @@ export async function getUserRoleInOrganization(
   userId: string,
   organizationId: string
 ): Promise<OrganizationRole | null> {
-  const { data, error } = await supabase
+  const client = getDbClient();
+  const { data, error } = await client
     .from("organization_members")
     .select("role")
     .eq("organization_id", organizationId)
@@ -241,6 +252,8 @@ export async function createInvitation(
   role: OrganizationRole = "member",
   invitedBy: string
 ): Promise<{ invitation: OrganizationInvitation | null; error: string | null }> {
+  const client = getDbClient();
+
   // 招待者のロールを確認（owner/adminのみ招待可能）
   const inviterRole = await getUserRoleInOrganization(invitedBy, organizationId);
   if (!inviterRole || inviterRole === "member") {
@@ -289,7 +302,7 @@ export async function createInvitation(
   const token = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7日後
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("organization_invitations")
     .insert({
       organization_id: organizationId,
@@ -341,8 +354,10 @@ export async function acceptInvitation(
   token: string,
   userId: string
 ): Promise<{ success: boolean; error: string | null; organizationId?: string }> {
+  const client = getDbClient();
+
   // 招待を取得
-  const { data: invitation, error: fetchError } = await supabase
+  const { data: invitation, error: fetchError } = await client
     .from("organization_invitations")
     .select("*")
     .eq("token", token)
@@ -375,14 +390,14 @@ export async function acceptInvitation(
   }
 
   // すでにメンバーなら成功扱い（安全・冪等）
-  const { data: existingMember } = await supabase
+  const { data: existingMember } = await client
     .from("organization_members")
     .select("id")
     .eq("organization_id", invitation.organization_id)
     .eq("user_id", userId)
     .maybeSingle();
   if (existingMember?.id) {
-    await supabase
+    await client
       .from("organization_invitations")
       .update({ accepted_at: new Date().toISOString() })
       .eq("id", invitation.id);
@@ -401,7 +416,7 @@ export async function acceptInvitation(
   }
 
   // メンバーとして追加
-  const { error: memberError } = await supabase
+  const { error: memberError } = await client
     .from("organization_members")
     .insert({
       organization_id: invitation.organization_id,
@@ -427,7 +442,7 @@ export async function acceptInvitation(
     // unique制約違反などは成功扱いに寄せる（冪等）
     const msg = (memberError as { message?: string } | null)?.message ?? "";
     if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("unique")) {
-      await supabase
+      await client
         .from("organization_invitations")
         .update({ accepted_at: new Date().toISOString() })
         .eq("id", invitation.id);
@@ -442,7 +457,7 @@ export async function acceptInvitation(
   }
 
   // 招待を受諾済みに更新
-  await supabase
+  await client
     .from("organization_invitations")
     .update({ accepted_at: new Date().toISOString() })
     .eq("id", invitation.id);
@@ -475,6 +490,8 @@ export async function removeOrganizationMember(
   targetUserId: string,
   actorUserId: string,
 ): Promise<{ success: boolean; error: string | null }> {
+  const client = getDbClient();
+
   const actorRole = await getUserRoleInOrganization(actorUserId, organizationId);
   if (!actorRole || actorRole === "member") {
     captureEvent(
@@ -496,7 +513,7 @@ export async function removeOrganizationMember(
     return { success: false, error: "自分自身を削除することはできません。" };
   }
 
-  const { data: target, error: targetError } = await supabase
+  const { data: target, error: targetError } = await client
     .from("organization_members")
     .select("role")
     .eq("organization_id", organizationId)
@@ -546,7 +563,7 @@ export async function removeOrganizationMember(
     return { success: false, error: "管理者はメンバーのみ削除できます。" };
   }
 
-  const { error } = await supabase
+  const { error } = await client
     .from("organization_members")
     .delete()
     .eq("organization_id", organizationId)
@@ -595,6 +612,8 @@ export async function updateOrganizationMemberRole(
   newRole: Exclude<OrganizationRole, "owner">,
   actorUserId: string,
 ): Promise<{ success: boolean; error: string | null }> {
+  const client = getDbClient();
+
   const actorRole = await getUserRoleInOrganization(actorUserId, organizationId);
   if (actorRole !== "owner") {
     captureEvent(
@@ -623,7 +642,7 @@ export async function updateOrganizationMemberRole(
     return { success: false, error: "自分自身のロールは変更できません。" };
   }
 
-  const { data: target, error: targetError } = await supabase
+  const { data: target, error: targetError } = await client
     .from("organization_members")
     .select("role")
     .eq("organization_id", organizationId)
@@ -655,7 +674,7 @@ export async function updateOrganizationMemberRole(
     return { success: false, error: "オーナーのロールは変更できません。" };
   }
 
-  const { error } = await supabase
+  const { error } = await client
     .from("organization_members")
     .update({ role: newRole })
     .eq("organization_id", organizationId)
@@ -702,6 +721,8 @@ export async function deleteOrganization(
   organizationId: string,
   actorUserId: string,
 ): Promise<{ success: boolean; error: string | null }> {
+  const client = getDbClient();
+
   const actorRole = await getUserRoleInOrganization(actorUserId, organizationId);
   if (actorRole !== "owner") {
     captureEvent(
@@ -715,7 +736,7 @@ export async function deleteOrganization(
     return { success: false, error: "組織を削除する権限がありません。" };
   }
 
-  const { error } = await supabase
+  const { error } = await client
     .from("organizations")
     .delete()
     .eq("id", organizationId);
@@ -756,6 +777,8 @@ export async function leaveOrganization(
   organizationId: string,
   actorUserId: string,
 ): Promise<{ success: boolean; error: string | null }> {
+  const client = getDbClient();
+
   const actorRole = await getUserRoleInOrganization(actorUserId, organizationId);
   if (!actorRole) {
     // すでに所属していないなら成功扱い（冪等）
@@ -774,7 +797,7 @@ export async function leaveOrganization(
     return { success: false, error: "オーナーは組織を退出できません。" };
   }
 
-  const { error } = await supabase
+  const { error } = await client
     .from("organization_members")
     .delete()
     .eq("organization_id", organizationId)

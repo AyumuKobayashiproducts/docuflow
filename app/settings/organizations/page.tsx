@@ -345,6 +345,7 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
       const { count: actCount } = await supabase
         .from("activity_logs")
         .select("*", { count: "exact", head: true })
+        .eq("organization_id", selectedOrgId)
         .gte("created_at", thirtyDaysAgo.toISOString());
       orgActivityCount = actCount ?? 0;
     }

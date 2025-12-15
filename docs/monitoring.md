@@ -391,6 +391,14 @@ DocuFlow では、重要イベントを `captureEvent()` で Sentry に送り、
 
 > 注意: `organizationId` や `userId` は **タグではなく extra** に入れています（タグの高カーディナリティ化を防ぐため）。
 
+#### タグ付きイベントが届くかを1発で確認（管理者のみ）
+
+DocuFlow には、**オーナー（`DOCUFLOW_OWNER_USER_ID`）だけ**が叩ける Sentry テストAPIがあります。  
+アラート作成の前に、まずこれで「`domain/action` タグがSentryに届く」ことを確認できます。
+
+- 例（支払い失敗のテストイベントを送信）: `/api/admin/sentry/test-event?action=billing.invoice.payment_failed`
+- 例（オーナー移譲のテストイベントを送信）: `/api/admin/sentry/test-event?action=org.ownership.transferred`
+
 #### 初心者向け：Sentry でアラートを作る手順（最短）
 
 1. **Sentry にログイン**
