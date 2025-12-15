@@ -46,11 +46,20 @@ type PageProps = {
 // 組織作成アクション
 async function createOrgAction(formData: FormData) {
   "use server";
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
-    redirect("/auth/login");
+    redirect(
+      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+    );
   }
 
   const name = String(formData.get("name") ?? "").trim();
@@ -83,17 +92,26 @@ async function createOrgAction(formData: FormData) {
   }
 
   revalidatePath("/settings/organizations");
-  redirect("/settings/organizations");
+  redirect(withLang("/settings/organizations"));
 }
 
 // 招待作成アクション
 async function inviteAction(formData: FormData) {
   "use server";
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
-    redirect("/auth/login");
+    redirect(
+      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+    );
   }
 
   const organizationId = String(formData.get("organizationId") ?? "").trim();
@@ -107,56 +125,92 @@ async function inviteAction(formData: FormData) {
   const res = await createInvitation(organizationId, email, role, userId);
   if (res.error || !res.invitation?.token) {
     redirect(
-      `/settings/organizations?org=${encodeURIComponent(
-        organizationId,
-      )}&inviteError=${encodeURIComponent(res.error ?? "招待の作成に失敗しました。")}`,
+      withLang(
+        `/settings/organizations?org=${encodeURIComponent(
+          organizationId,
+        )}&inviteError=${encodeURIComponent(
+          res.error ??
+            (locale === "en"
+              ? "Failed to create invitation."
+              : "招待の作成に失敗しました。"),
+        )}`,
+      ),
     );
   }
 
   redirect(
-    `/settings/organizations?org=${encodeURIComponent(
-      organizationId,
-    )}&inviteToken=${encodeURIComponent(res.invitation.token)}`,
+    withLang(
+      `/settings/organizations?org=${encodeURIComponent(
+        organizationId,
+      )}&inviteToken=${encodeURIComponent(res.invitation.token)}`,
+    ),
   );
 }
 
 async function removeMemberAction(formData: FormData) {
   "use server";
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
-    redirect("/auth/login");
+    redirect(
+      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+    );
   }
 
   const organizationId = String(formData.get("organizationId") ?? "").trim();
   const targetUserId = String(formData.get("targetUserId") ?? "").trim();
   if (!organizationId || !targetUserId) {
-    redirect(`/settings/organizations?org=${encodeURIComponent(organizationId)}`);
+    redirect(withLang(`/settings/organizations?org=${encodeURIComponent(organizationId)}`));
   }
 
   const res = await removeOrganizationMember(organizationId, targetUserId, userId);
   if (!res.success) {
     redirect(
-      `/settings/organizations?org=${encodeURIComponent(
-        organizationId,
-      )}&orgError=${encodeURIComponent(res.error ?? "操作に失敗しました。")}`,
+      withLang(
+        `/settings/organizations?org=${encodeURIComponent(
+          organizationId,
+        )}&orgError=${encodeURIComponent(
+          res.error ??
+            (locale === "en" ? "Operation failed." : "操作に失敗しました。"),
+        )}`,
+      ),
     );
   }
 
   revalidatePath("/settings/organizations");
   redirect(
-    `/settings/organizations?org=${encodeURIComponent(
-      organizationId,
-    )}&orgMsg=${encodeURIComponent("メンバーを削除しました。")}`,
+    withLang(
+      `/settings/organizations?org=${encodeURIComponent(
+        organizationId,
+      )}&orgMsg=${encodeURIComponent(
+        locale === "en" ? "Member removed." : "メンバーを削除しました。",
+      )}`,
+    ),
   );
 }
 
 async function changeRoleAction(formData: FormData) {
   "use server";
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
-    redirect("/auth/login");
+    redirect(
+      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+    );
   }
 
   const organizationId = String(formData.get("organizationId") ?? "").trim();
@@ -166,7 +220,7 @@ async function changeRoleAction(formData: FormData) {
     | "member";
 
   if (!organizationId || !targetUserId || (newRole !== "admin" && newRole !== "member")) {
-    redirect(`/settings/organizations?org=${encodeURIComponent(organizationId)}`);
+    redirect(withLang(`/settings/organizations?org=${encodeURIComponent(organizationId)}`));
   }
 
   const res = await updateOrganizationMemberRole(
@@ -177,39 +231,61 @@ async function changeRoleAction(formData: FormData) {
   );
   if (!res.success) {
     redirect(
-      `/settings/organizations?org=${encodeURIComponent(
-        organizationId,
-      )}&orgError=${encodeURIComponent(res.error ?? "操作に失敗しました。")}`,
+      withLang(
+        `/settings/organizations?org=${encodeURIComponent(
+          organizationId,
+        )}&orgError=${encodeURIComponent(
+          res.error ??
+            (locale === "en" ? "Operation failed." : "操作に失敗しました。"),
+        )}`,
+      ),
     );
   }
 
   revalidatePath("/settings/organizations");
   redirect(
-    `/settings/organizations?org=${encodeURIComponent(
-      organizationId,
-    )}&orgMsg=${encodeURIComponent("ロールを更新しました。")}`,
+    withLang(
+      `/settings/organizations?org=${encodeURIComponent(
+        organizationId,
+      )}&orgMsg=${encodeURIComponent(
+        locale === "en" ? "Role updated." : "ロールを更新しました。",
+      )}`,
+    ),
   );
 }
 
 async function deleteOrganizationAction(formData: FormData) {
   "use server";
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
-    redirect("/auth/login");
+    redirect(
+      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+    );
   }
 
   const organizationId = String(formData.get("organizationId") ?? "").trim();
   if (!organizationId) {
-    redirect("/settings/organizations");
+    redirect(withLang("/settings/organizations"));
   }
 
   const res = await deleteOrganization(organizationId, userId);
   if (!res.success) {
     redirect(
-      `/settings/organizations?org=${encodeURIComponent(
-        organizationId,
-      )}&orgError=${encodeURIComponent(res.error ?? "削除に失敗しました。")}`,
+      withLang(
+        `/settings/organizations?org=${encodeURIComponent(
+          organizationId,
+        )}&orgError=${encodeURIComponent(
+          res.error ?? (locale === "en" ? "Delete failed." : "削除に失敗しました。"),
+        )}`,
+      ),
     );
   }
 
@@ -218,29 +294,49 @@ async function deleteOrganizationAction(formData: FormData) {
 
   revalidatePath("/settings/organizations");
   redirect(
-    `/settings/organizations?orgMsg=${encodeURIComponent("組織を削除しました。")}`,
+    withLang(
+      `/settings/organizations?orgMsg=${encodeURIComponent(
+        locale === "en" ? "Organization deleted." : "組織を削除しました。",
+      )}`,
+    ),
   );
 }
 
 async function leaveOrganizationAction(formData: FormData) {
   "use server";
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
-    redirect("/auth/login");
+    redirect(
+      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+    );
   }
 
   const organizationId = String(formData.get("organizationId") ?? "").trim();
   if (!organizationId) {
-    redirect("/settings/organizations");
+    redirect(withLang("/settings/organizations"));
   }
 
   const res = await leaveOrganization(organizationId, userId);
   if (!res.success) {
     redirect(
-      `/settings/organizations?org=${encodeURIComponent(
-        organizationId,
-      )}&orgError=${encodeURIComponent(res.error ?? "退出に失敗しました。")}`,
+      withLang(
+        `/settings/organizations?org=${encodeURIComponent(
+          organizationId,
+        )}&orgError=${encodeURIComponent(
+          res.error ??
+            (locale === "en"
+              ? "Failed to leave organization."
+              : "退出に失敗しました。"),
+        )}`,
+      ),
     );
   }
 
@@ -252,22 +348,35 @@ async function leaveOrganizationAction(formData: FormData) {
 
   revalidatePath("/settings/organizations");
   redirect(
-    `/settings/organizations?orgMsg=${encodeURIComponent("組織を退出しました。")}`,
+    withLang(
+      `/settings/organizations?orgMsg=${encodeURIComponent(
+        locale === "en" ? "Left the organization." : "組織を退出しました。",
+      )}`,
+    ),
   );
 }
 
 async function transferOwnershipAction(formData: FormData) {
   "use server";
+  const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
-    redirect("/auth/login");
+    redirect(
+      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+    );
   }
 
   const organizationId = String(formData.get("organizationId") ?? "").trim();
   const newOwnerUserId = String(formData.get("newOwnerUserId") ?? "").trim();
   if (!organizationId || !newOwnerUserId) {
-    redirect(`/settings/organizations?org=${encodeURIComponent(organizationId)}`);
+    redirect(withLang(`/settings/organizations?org=${encodeURIComponent(organizationId)}`));
   }
 
   const res = await transferOrganizationOwnership(
@@ -277,17 +386,25 @@ async function transferOwnershipAction(formData: FormData) {
   );
   if (!res.success) {
     redirect(
-      `/settings/organizations?org=${encodeURIComponent(
-        organizationId,
-      )}&orgError=${encodeURIComponent(res.error ?? "移譲に失敗しました。")}`,
+      withLang(
+        `/settings/organizations?org=${encodeURIComponent(
+          organizationId,
+        )}&orgError=${encodeURIComponent(
+          res.error ?? (locale === "en" ? "Transfer failed." : "移譲に失敗しました。"),
+        )}`,
+      ),
     );
   }
 
   revalidatePath("/settings/organizations");
   redirect(
-    `/settings/organizations?org=${encodeURIComponent(
-      organizationId,
-    )}&orgMsg=${encodeURIComponent("オーナーを移譲しました。")}`,
+    withLang(
+      `/settings/organizations?org=${encodeURIComponent(
+        organizationId,
+      )}&orgMsg=${encodeURIComponent(
+        locale === "en" ? "Ownership transferred." : "オーナーを移譲しました。",
+      )}`,
+    ),
   );
 }
 
@@ -296,6 +413,12 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
   const action = params?.action;
   const selectedOrgId = params?.org;
   const locale: Locale = getLocaleFromParam(params?.lang);
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
   const inviteToken = params?.inviteToken;
   const inviteError = params?.inviteError;
   const orgMsg = params?.orgMsg;
@@ -364,18 +487,18 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
               <Logo size="sm" />
             </Link>
             <span className="text-sm text-slate-500">
-              {"組織設定"}
+              {locale === "en" ? "Organization settings" : "組織設定"}
             </span>
           </div>
           <Link
-            href={"/app"}
+            href={withLang("/app")}
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             <span>
-              {"ダッシュボードへ戻る"}
+              {locale === "en" ? "Back to dashboard" : "ダッシュボードへ戻る"}
             </span>
           </Link>
         </div>
@@ -385,7 +508,7 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
         {(orgError || orgMsg) && (
           <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-900">
-              お知らせ
+              {locale === "en" ? "Notice" : "お知らせ"}
             </h2>
             {orgError ? (
               <p className="mt-2 text-sm text-rose-600">
@@ -402,7 +525,7 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
         {(inviteError || inviteToken) && (
           <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-900">
-              招待リンク
+              {locale === "en" ? "Invite link" : "招待リンク"}
             </h2>
             {inviteError ? (
               <p className="mt-2 text-sm text-rose-600">
@@ -411,7 +534,9 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
             ) : (
               <>
                 <p className="mt-2 text-xs text-slate-600">
-                  下のURLをコピーして、招待したい人に送ってください（7日で期限切れ）。
+                  {locale === "en"
+                    ? "Copy the URL below and send it to the person you want to invite (expires in 7 days)."
+                    : "下のURLをコピーして、招待したい人に送ってください（7日で期限切れ）。"}
                 </p>
                 <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12px] text-slate-800">
                   {`${getSiteUrl()}/invite/${inviteToken}`}
@@ -425,15 +550,16 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
         {action === "new" && (
           <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">
-              {"新しい組織を作成"}
+              {locale === "en" ? "Create a new organization" : "新しい組織を作成"}
             </h2>
             <form action={createOrgAction} className="space-y-4">
+              <input type="hidden" name="lang" value={locale} />
               <div>
                 <label
                   htmlFor="name"
                   className="mb-1 block text-sm font-medium text-slate-700"
                 >
-                  {"組織名"}{" "}
+                  {locale === "en" ? "Organization name" : "組織名"}{" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -441,7 +567,7 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                   id="name"
                   name="name"
                   required
-                  placeholder="例: 株式会社ABC"
+                  placeholder={locale === "en" ? "e.g. Acme Inc." : "例: 株式会社ABC"}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
                 />
               </div>
@@ -450,18 +576,22 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                   htmlFor="slug"
                   className="mb-1 block text-sm font-medium text-slate-700"
                 >
-                  {"スラッグ（URL用・英数字）"}
+                  {locale === "en"
+                    ? "Slug (URL, lowercase letters/numbers)"
+                    : "スラッグ（URL用・英数字）"}
                 </label>
                 <input
                   type="text"
                   id="slug"
                   name="slug"
-                  placeholder="例: abc-corp"
+                  placeholder={locale === "en" ? "e.g. acme-inc" : "例: abc-corp"}
                   pattern="[a-z0-9-]+"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  {"空欄の場合、組織名から自動生成されます"}
+                  {locale === "en"
+                    ? "If empty, it will be generated from the organization name."
+                    : "空欄の場合、組織名から自動生成されます"}
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -469,13 +599,13 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                   type="submit"
                   className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-400 transition-colors"
                 >
-                  {"作成する"}
+                  {locale === "en" ? "Create" : "作成する"}
                 </button>
                 <Link
-                  href="/settings/organizations"
+                  href={withLang("/settings/organizations")}
                   className="text-sm text-slate-600 hover:text-slate-900"
                 >
-                  {"キャンセル"}
+                  {locale === "en" ? "Cancel" : "キャンセル"}
                 </Link>
               </div>
             </form>
@@ -486,18 +616,20 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
         <section className="mb-8">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">
-              {`所属組織 (${organizations.length})`}
+              {locale === "en"
+                ? `Organizations (${organizations.length})`
+                : `所属組織 (${organizations.length})`}
             </h2>
             {action !== "new" && (
               <Link
-                href="/settings/organizations?action=new"
+                href={withLang("/settings/organizations?action=new")}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-400 transition-colors"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 <span>
-                  {"新しい組織を作成"}
+                  {locale === "en" ? "New organization" : "新しい組織を作成"}
                 </span>
               </Link>
             )}
@@ -509,17 +641,21 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                 🏢
               </div>
               <p className="mb-2 text-sm font-medium text-slate-900">
-                {"まだ組織に所属していません"}
+                {locale === "en"
+                  ? "You are not in any organizations yet"
+                  : "まだ組織に所属していません"}
               </p>
               <p className="mb-4 text-xs text-slate-500">
-                {"組織を作成して、チームでドキュメントを共有しましょう"}
+                {locale === "en"
+                  ? "Create an organization to collaborate with your team."
+                  : "組織を作成して、チームでドキュメントを共有しましょう"}
               </p>
               <Link
-                href="/settings/organizations?action=new"
+                href={withLang("/settings/organizations?action=new")}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-400 transition-colors"
               >
                 <span>
-                  {"最初の組織を作成"}
+                  {locale === "en" ? "Create your first org" : "最初の組織を作成"}
                 </span>
               </Link>
             </div>
@@ -528,7 +664,7 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
               {organizations.map((org) => (
                 <Link
                   key={org.id}
-                  href={`/settings/organizations?org=${org.id}`}
+                  href={withLang(`/settings/organizations?org=${org.id}`)}
                   className={`group rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                     selectedOrgId === org.id
                       ? "border-emerald-500 ring-2 ring-emerald-500/20"
@@ -702,11 +838,17 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-slate-900">
-                          {member.user_id === userId ? "あなた" : `ユーザー ${member.user_id.slice(0, 8)}...`}
+                          {member.user_id === userId
+                            ? (locale === "en" ? "You" : "あなた")
+                            : locale === "en"
+                              ? `User ${member.user_id.slice(0, 8)}...`
+                              : `ユーザー ${member.user_id.slice(0, 8)}...`}
                         </p>
                         <p className="text-[10px] text-slate-500">
-                          {new Date(member.created_at).toLocaleDateString("ja-JP")}{" "}
-                          {"から参加"}
+                          {new Date(member.created_at).toLocaleDateString(
+                            locale === "en" ? "en-US" : "ja-JP",
+                          )}{" "}
+                          {locale === "en" ? "joined" : "から参加"}
                         </p>
                       </div>
                     </div>
@@ -726,6 +868,7 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                         <>
                           {member.role === "member" ? (
                             <form action={changeRoleAction}>
+                              <input type="hidden" name="lang" value={locale} />
                               <input type="hidden" name="organizationId" value={selectedOrg.id} />
                               <input type="hidden" name="targetUserId" value={member.user_id} />
                               <input type="hidden" name="newRole" value="admin" />
@@ -733,11 +876,12 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                                 type="submit"
                                 className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
                               >
-                                管理者にする
+                                {locale === "en" ? "Make admin" : "管理者にする"}
                               </button>
                             </form>
                           ) : (
                             <form action={changeRoleAction}>
+                              <input type="hidden" name="lang" value={locale} />
                               <input type="hidden" name="organizationId" value={selectedOrg.id} />
                               <input type="hidden" name="targetUserId" value={member.user_id} />
                               <input type="hidden" name="newRole" value="member" />
@@ -745,19 +889,20 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                                 type="submit"
                                 className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
                               >
-                                メンバーに戻す
+                                {locale === "en" ? "Make member" : "メンバーに戻す"}
                               </button>
                             </form>
                           )}
 
                           <form action={removeMemberAction}>
+                            <input type="hidden" name="lang" value={locale} />
                             <input type="hidden" name="organizationId" value={selectedOrg.id} />
                             <input type="hidden" name="targetUserId" value={member.user_id} />
                             <button
                               type="submit"
                               className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-medium text-rose-700 hover:bg-rose-100"
                             >
-                              削除
+                              {locale === "en" ? "Remove" : "削除"}
                             </button>
                           </form>
                         </>
@@ -768,13 +913,14 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                         member.role === "member" &&
                         member.user_id !== userId && (
                         <form action={removeMemberAction}>
+                          <input type="hidden" name="lang" value={locale} />
                           <input type="hidden" name="organizationId" value={selectedOrg.id} />
                           <input type="hidden" name="targetUserId" value={member.user_id} />
                           <button
                             type="submit"
                             className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-medium text-rose-700 hover:bg-rose-100"
                           >
-                            削除
+                            {locale === "en" ? "Remove" : "削除"}
                           </button>
                         </form>
                       )}
@@ -787,7 +933,7 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
             {/* ロール権限の説明 */}
             <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                {"ロールと権限"}
+                {locale === "en" ? "Roles & permissions" : "ロールと権限"}
               </h3>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-lg bg-white p-3 border border-emerald-100">
@@ -798,15 +944,17 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                   <ul className="space-y-1 text-[10px] text-slate-600">
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"組織の削除"}
+                      {locale === "en" ? "Delete organization" : "組織の削除"}
                     </li>
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"課金設定の管理"}
+                      {locale === "en" ? "Manage billing" : "課金設定の管理"}
                     </li>
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"全ての管理者権限"}
+                      {locale === "en"
+                        ? "All admin permissions"
+                        : "全ての管理者権限"}
                     </li>
                   </ul>
                 </div>
@@ -818,15 +966,17 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                   <ul className="space-y-1 text-[10px] text-slate-600">
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"メンバーの招待"}
+                      {locale === "en" ? "Invite members" : "メンバーの招待"}
                     </li>
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"メンバーの削除"}
+                      {locale === "en" ? "Remove members" : "メンバーの削除"}
                     </li>
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"全てのメンバー権限"}
+                      {locale === "en"
+                        ? "All member permissions"
+                        : "全てのメンバー権限"}
                     </li>
                   </ul>
                 </div>
@@ -838,15 +988,15 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                   <ul className="space-y-1 text-[10px] text-slate-600">
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"ドキュメントの閲覧"}
+                      {locale === "en" ? "View documents" : "ドキュメントの閲覧"}
                     </li>
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"ドキュメントの作成"}
+                      {locale === "en" ? "Create documents" : "ドキュメントの作成"}
                     </li>
                     <li className="flex items-center gap-1">
                       <span className="text-emerald-500">✓</span>
-                      {"コメント・共有"}
+                      {locale === "en" ? "Comments & sharing" : "コメント・共有"}
                     </li>
                   </ul>
                 </div>
@@ -857,15 +1007,20 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
             {userRole && userRole !== "member" && (
               <div>
                 <h3 className="mb-3 text-sm font-semibold text-slate-900">
-                  {"新しいメンバーを招待"}
+                  {locale === "en" ? "Invite a member" : "新しいメンバーを招待"}
                 </h3>
                 <form action={inviteAction} className="flex gap-2">
+                  <input type="hidden" name="lang" value={locale} />
                   <input type="hidden" name="organizationId" value={selectedOrg.id} />
                   <input
                     type="email"
                     name="email"
                     required
-                    placeholder="招待するメールアドレス"
+                    placeholder={
+                      locale === "en"
+                        ? "Email to invite"
+                        : "招待するメールアドレス"
+                    }
                     className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-emerald-500/20 focus:ring"
                   />
                   <select
@@ -874,15 +1029,15 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                     className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
                   >
                     <option value="member">
-                      {"メンバー"}
+                      {locale === "en" ? "Member" : "メンバー"}
                     </option>
                     {userRole === "owner" && (
                       <>
                         <option value="admin">
-                          {"管理者"}
+                          {locale === "en" ? "Admin" : "管理者"}
                         </option>
                         <option value="owner">
-                          {"オーナー"}
+                          {locale === "en" ? "Owner" : "オーナー"}
                         </option>
                       </>
                     )}
@@ -891,11 +1046,13 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                     type="submit"
                     className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-400 transition-colors"
                   >
-                    {"招待"}
+                    {locale === "en" ? "Invite" : "招待"}
                   </button>
                 </form>
                 <p className="mt-2 text-xs text-slate-500">
-                  {"招待リンクが生成され、相手がリンクをクリックすると組織に参加できます"}
+                  {locale === "en"
+                    ? "An invite link will be generated. The recipient joins by opening the link."
+                    : "招待リンクが生成され、相手がリンクをクリックすると組織に参加できます"}
                 </p>
               </div>
             )}
@@ -904,31 +1061,42 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
             {userRole === "owner" && (
               <div className="mt-8 rounded-xl border border-rose-200 bg-rose-50 p-4">
                 <h3 className="text-sm font-semibold text-rose-800">
-                  危険な操作
+                  {locale === "en" ? "Danger zone" : "危険な操作"}
                 </h3>
                 <p className="mt-1 text-xs text-rose-700">
-                  組織を削除すると、メンバー・招待・（組織の）データ参照に影響します。元に戻せません。
+                  {locale === "en"
+                    ? "Deleting an organization affects members, invitations, and data access. This cannot be undone."
+                    : "組織を削除すると、メンバー・招待・（組織の）データ参照に影響します。元に戻せません。"}
                 </p>
 
                 {/* オーナー移譲 */}
                 <div className="mt-4 rounded-lg border border-rose-200 bg-white p-3">
                   <h4 className="text-xs font-semibold text-rose-800">
-                    オーナー移譲
+                    {locale === "en"
+                      ? "Transfer ownership"
+                      : "オーナー移譲"}
                   </h4>
                   <p className="mt-1 text-[11px] text-rose-700">
-                    オーナーを別メンバーに移譲すると、あなたは管理者（Admin）になります。
+                    {locale === "en"
+                      ? "After transfer, you become an Admin."
+                      : "オーナーを別メンバーに移譲すると、あなたは管理者（Admin）になります。"}
                   </p>
                   {(!process.env.NEXT_PUBLIC_SUPABASE_URL ||
                     !process.env.SUPABASE_SERVICE_ROLE_KEY) ? (
                     <p className="mt-2 text-[11px] text-rose-700">
-                      オーナー移譲にはサーバー設定が必要です（`SUPABASE_SERVICE_ROLE_KEY`）。
+                      {locale === "en"
+                        ? "Ownership transfer requires server configuration (`SUPABASE_SERVICE_ROLE_KEY`)."
+                        : "オーナー移譲にはサーバー設定が必要です（`SUPABASE_SERVICE_ROLE_KEY`）。"}
                     </p>
                   ) : members.filter((m) => m.user_id !== userId).length === 0 ? (
                     <p className="mt-2 text-[11px] text-rose-700">
-                      移譲先のメンバーがいません。先に招待してください。
+                      {locale === "en"
+                        ? "No eligible members to transfer to. Invite someone first."
+                        : "移譲先のメンバーがいません。先に招待してください。"}
                     </p>
                   ) : (
                     <form action={transferOwnershipAction} className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <input type="hidden" name="lang" value={locale} />
                       <input type="hidden" name="organizationId" value={selectedOrg.id} />
                       <select
                         name="newOwnerUserId"
@@ -939,7 +1107,9 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                           .filter((m) => m.user_id !== userId)
                           .map((m) => (
                             <option key={m.user_id} value={m.user_id}>
-                              {`ユーザー ${m.user_id.slice(0, 8)}...（${getRoleDisplayName(m.role)}）`}
+                              {locale === "en"
+                                ? `User ${m.user_id.slice(0, 8)}... (${getRoleDisplayName(m.role)})`
+                                : `ユーザー ${m.user_id.slice(0, 8)}...（${getRoleDisplayName(m.role)}）`}
                             </option>
                           ))}
                       </select>
@@ -947,19 +1117,20 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
                         type="submit"
                         className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
                       >
-                        移譲する
+                        {locale === "en" ? "Transfer" : "移譲する"}
                       </button>
                     </form>
                   )}
                 </div>
 
                 <form action={deleteOrganizationAction} className="mt-3">
+                  <input type="hidden" name="lang" value={locale} />
                   <input type="hidden" name="organizationId" value={selectedOrg.id} />
                   <button
                     type="submit"
                     className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
                   >
-                    組織を削除する
+                    {locale === "en" ? "Delete organization" : "組織を削除する"}
                   </button>
                 </form>
               </div>
@@ -969,18 +1140,21 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
             {userRole && userRole !== "owner" && (
               <div className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <h3 className="text-sm font-semibold text-amber-900">
-                  組織を退出
+                  {locale === "en" ? "Leave organization" : "組織を退出"}
                 </h3>
                 <p className="mt-1 text-xs text-amber-800">
-                  退出すると、この組織のドキュメントや設定にアクセスできなくなります。
+                  {locale === "en"
+                    ? "After leaving, you will no longer have access to this organization's documents or settings."
+                    : "退出すると、この組織のドキュメントや設定にアクセスできなくなります。"}
                 </p>
                 <form action={leaveOrganizationAction} className="mt-3">
+                  <input type="hidden" name="lang" value={locale} />
                   <input type="hidden" name="organizationId" value={selectedOrg.id} />
                   <button
                     type="submit"
                     className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
                   >
-                    退出する
+                    {locale === "en" ? "Leave" : "退出する"}
                   </button>
                 </form>
               </div>
