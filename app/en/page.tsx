@@ -9,7 +9,7 @@ import { Check, ArrowRight, Sparkles, Shield, BarChart3 } from "lucide-react";
 export const metadata: Metadata = {
   title: "DocuFlow | AI Document Workspace",
   description:
-    "Upload PDFs/Docs and let AI summarize, tag, and make them instantly searchable. Built for speed, security, and teams.",
+    "AI-powered document workspace for PDFs/Docs: summarize, tag, and search instantly. Built with production-grade security (RBAC/RLS, audit logs, expiring share links).",
   alternates: { canonical: "/en" },
 };
 
@@ -142,22 +142,26 @@ export default async function HomeEn() {
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-300 mb-8">
               <Sparkles className="h-4 w-4" />
-              <span>Portfolio build — ready for real-world usage</span>
+              <span>Production-grade portfolio build (billing, RBAC, audit logs)</span>
             </div>
 
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.08]">
-              Turn messy docs into
+              Turn scattered PDFs into
               <br />
               <span className="bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-400 bg-clip-text text-transparent">
                 searchable knowledge
               </span>
               <br />
-              in minutes
+              your team can use
             </h1>
 
             <p className="mt-8 text-xl text-slate-400 leading-relaxed max-w-2xl mx-auto">
-              Upload PDFs/Docs, get AI summaries & tags, and find anything instantly.
-              Built with security in mind (RBAC, audit logs, expiring share links).
+              Upload PDFs/Docs, get AI summaries & tags, and find anything instantly — with real guardrails:
+              server-side RBAC/RLS, scoped mutations, audit logs, expiring share links, and rate-limited exports.
+            </p>
+
+            <p className="mt-4 text-sm text-slate-500 max-w-2xl mx-auto">
+              Built with Next.js + Supabase + Stripe + Sentry. Designed to demonstrate “production details”, not just UI.
             </p>
 
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -221,16 +225,16 @@ export default async function HomeEn() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
-                title: "AI summaries you can trust",
-                body: "Every AI feature consumes quota and is enforced server-side — no bypasses.",
+                title: "AI features with quota enforcement",
+                body: "Every AI-related feature consumes quota server-side — no client-side bypasses, consistent usage tracking.",
               },
               {
-                title: "Real access control",
-                body: "Org RBAC (owner/admin/member), server-side permission checks, and RLS alignment.",
+                title: "Org RBAC done right",
+                body: "Owner/Admin/Member permissions enforced in server actions, aligned with database RLS for long-term safety.",
               },
               {
-                title: "Secure sharing",
-                body: "Expiring share links based on plan, token regeneration, and audit logs.",
+                title: "Security & observability",
+                body: "Expiring share links (plan-based), token rotation, critical actions logged to audit trail + Sentry tags for alerts.",
               },
             ].map((c) => (
               <div
@@ -357,7 +361,8 @@ export default async function HomeEn() {
             </div>
             <h2 className="text-3xl md:text-4xl font-bold">Built with guardrails</h2>
             <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-              Server-side RBAC, scoped mutations by user/org, rate-limited exports, expiring share links, and audit logs.
+              Tight scopes everywhere: user_id-scoped mutations and fetches, org RBAC for management actions,
+              rate-limited heavy APIs (export), and an audit log for critical operations.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
@@ -367,7 +372,7 @@ export default async function HomeEn() {
                 Start free trial <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/support"
+                href="/en/support"
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-7 py-3 text-sm font-medium text-white hover:bg-white/10"
               >
                 Support
