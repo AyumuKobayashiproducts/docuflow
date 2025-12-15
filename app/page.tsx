@@ -707,24 +707,24 @@ export default async function Home() {
                 <h4 className="text-sm font-semibold text-white mb-4">製品</h4>
                 <ul className="space-y-2">
                   <li><a href="#features" className="text-sm text-slate-500 hover:text-white transition-colors">機能</a></li>
-                  <li><a href="#pricing" className="text-sm text-slate-500 hover:text-white transition-colors">料金</a></li>
+                  <li><Link href="/pricing" className="text-sm text-slate-500 hover:text-white transition-colors">料金</Link></li>
                   <li><Link href="/demo/en" className="text-sm text-slate-500 hover:text-white transition-colors">デモ</Link></li>
                 </ul>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-white mb-4">会社情報</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="text-sm text-slate-500 hover:text-white transition-colors">会社概要</a></li>
-                  <li><a href="#" className="text-sm text-slate-500 hover:text-white transition-colors">採用情報</a></li>
-                  <li><a href="mailto:contact@docuflow.io" className="text-sm text-slate-500 hover:text-white transition-colors">お問い合わせ</a></li>
+                  <li><Link href="/company" className="text-sm text-slate-500 hover:text-white transition-colors">会社概要</Link></li>
+                  <li><Link href="/support" className="text-sm text-slate-500 hover:text-white transition-colors">サポート</Link></li>
+                  <li><a href="mailto:contact@docuflow.io" className="text-sm text-slate-500 hover:text-white transition-colors">お問い合わせ（メール）</a></li>
                 </ul>
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-white mb-4">法的情報</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="text-sm text-slate-500 hover:text-white transition-colors">利用規約</a></li>
-                  <li><a href="#" className="text-sm text-slate-500 hover:text-white transition-colors">プライバシーポリシー</a></li>
-                  <li><a href="#" className="text-sm text-slate-500 hover:text-white transition-colors">特定商取引法に基づく表記</a></li>
+                  <li><Link href="/terms" className="text-sm text-slate-500 hover:text-white transition-colors">利用規約</Link></li>
+                  <li><Link href="/privacy" className="text-sm text-slate-500 hover:text-white transition-colors">プライバシーポリシー</Link></li>
+                  <li><Link href="/tokusho" className="text-sm text-slate-500 hover:text-white transition-colors">特定商取引法に基づく表記</Link></li>
                 </ul>
               </div>
             </div>
