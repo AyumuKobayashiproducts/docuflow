@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Check, ArrowRight, BarChart3 } from "lucide-react";
 import { MarketingSimpleLayout } from "@/components/MarketingSimpleLayout";
+import { getPreferredLocale } from "@/lib/serverLocale";
 
 export const metadata: Metadata = {
   title: "料金 | DocuFlow",
@@ -10,6 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function PricingPage() {
+  const locale = await getPreferredLocale();
+  const signupHref = locale === "en" ? "/en/auth/signup" : "/auth/signup";
   // LPと同様に Stripe の Price を正として表示（取れない場合はフォールバック）
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   const priceIds = {
@@ -104,7 +107,7 @@ export default async function PricingPage() {
             ))}
           </ul>
           <Link
-            href="/auth/signup"
+            href={signupHref}
             className="mt-5 inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10"
           >
             無料で始める
@@ -129,7 +132,7 @@ export default async function PricingPage() {
             ))}
           </ul>
           <Link
-            href="/auth/signup?plan=pro"
+            href={`${signupHref}?plan=pro`}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400"
           >
             <span>無料で試す</span>
@@ -152,7 +155,7 @@ export default async function PricingPage() {
             ))}
           </ul>
           <Link
-            href="/auth/signup?plan=team"
+            href={`${signupHref}?plan=team`}
             className="mt-5 inline-flex w-full items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10"
           >
             無料で試す
