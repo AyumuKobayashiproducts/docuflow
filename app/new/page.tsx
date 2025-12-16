@@ -218,6 +218,7 @@ async function createDocument(formData: FormData) {
 
   let summary = "";
   let tags: string[] = [];
+  let aiBudgetOk = false;
 
   try {
     // OpenAI が有効な場合のみ、AI予算（回数）を事前に消費して上限を強制する
@@ -228,6 +229,7 @@ async function createDocument(formData: FormData) {
         1 + // summary & tags
         1; // embedding (background)
       await ensureAndConsumeAICalls(userId, activeOrgId, aiCallsNeeded, locale);
+      aiBudgetOk = true;
     }
 
     const titlePromise = title
@@ -255,6 +257,9 @@ async function createDocument(formData: FormData) {
     summary = generated.summary;
     tags = generated.tags;
   } catch (e) {
+    // NOTE:
+    // - AI上限超過などで ensureAndConsumeAICalls が失敗した場合でも、ドキュメント作成自体は継続（AIは使わない）
+    // - ただし AI処理（要約/タグ/埋め込み）を後続で実行すると抜け道になるため、aiBudgetOk を false のままにする
     console.error("AI generate error in createDocument:", e);
     if (!title) {
       title = content.slice(0, 30) || (locale === "en" ? "Untitled document" : "無題ドキュメント");
@@ -292,7 +297,9 @@ async function createDocument(formData: FormData) {
     });
 
     // 埋め込みベクトルを生成・保存（AI処理と並行して実行）
-    updateDocumentEmbedding(String(created.id), content, userId).catch(console.error);
+    if (process.env.OPENAI_API_KEY && aiBudgetOk) {
+      updateDocumentEmbedding(String(created.id), content, userId).catch(console.error);
+    }
   }
 
   redirect(locale === "en" ? "/app?lang=en" : "/app");

@@ -338,10 +338,12 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
 
     let title = "", category = "", summary = "";
     let tags: string[] = [];
+    let aiBudgetOk = false;
     try {
       if (process.env.OPENAI_API_KEY) {
         // title + category + summary + embedding
         await ensureAndConsumeAICalls(userId, activeOrgId, 4, locale);
+        aiBudgetOk = true;
       }
       const [generatedTitle, generatedCategory, generated] = await Promise.all([
         generateTitleFromContent(content),
@@ -369,7 +371,10 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
     const created = Array.isArray(data) && data.length > 0 ? data[0] : null;
     if (created?.id) {
       await logActivity("create_document", { documentId: String(created.id), documentTitle: title });
-      updateDocumentEmbedding(String(created.id), content, userId).catch(console.error);
+      // AI上限超過などで aiBudgetOk=false の場合、埋め込み更新を実行すると抜け道になるためスキップする
+      if (process.env.OPENAI_API_KEY && aiBudgetOk) {
+        updateDocumentEmbedding(String(created.id), content, userId).catch(console.error);
+      }
     }
   }
   revalidatePath("/app");
