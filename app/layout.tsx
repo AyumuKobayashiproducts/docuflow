@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppClientShell } from "@/components/AppClientShell";
@@ -53,10 +53,6 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "DocuFlow",
   },
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#020617" },
-  ],
   openGraph: {
     title: "DocuFlow | AI 要約ドキュメントワークスペース",
     description: "AI 要約で、PDF / Word 資料を一瞬で整理。GPT-4を活用したスマートなドキュメント管理。",
@@ -77,6 +73,13 @@ export const metadata: Metadata = {
     description: "AI 要約で、PDF / Word 資料を一瞬で整理",
     images: ["/og-image.svg"],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+  ],
 };
 
 export default function RootLayout({
