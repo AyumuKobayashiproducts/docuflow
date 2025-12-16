@@ -241,18 +241,53 @@ export async function getPersonalSubscription(
  */
 export async function getOrganizationSubscription(
   organizationId: string | null,
+  options?: { requesterUserId?: string | null },
 ): Promise<OrganizationSubscription | null> {
   if (!organizationId) {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("organizations")
-    .select(
-      "plan, seat_limit, document_limit, stripe_customer_id, stripe_subscription_id, billing_email, subscription_status, current_period_end",
-    )
-    .eq("id", organizationId)
-    .maybeSingle();
+  // Safety-by-default:
+  // - userId が分かる文脈では、必ず membership 起点で organizations をスコープする（漏洩防止）
+  const requesterUserId = options?.requesterUserId ?? null;
+  let data: any = null;
+  let error: any = null;
+
+  if (requesterUserId) {
+    const res = await supabase
+      .from("organization_members")
+      .select(
+        `
+        organization:organizations (
+          plan,
+          seat_limit,
+          document_limit,
+          stripe_customer_id,
+          stripe_subscription_id,
+          billing_email,
+          subscription_status,
+          current_period_end
+        )
+      `,
+      )
+      .eq("organization_id", organizationId)
+      .eq("user_id", requesterUserId)
+      .maybeSingle();
+
+    error = res.error;
+    const org = (res.data as any)?.organization;
+    data = Array.isArray(org) ? org[0] : org;
+  } else {
+    const res = await supabase
+      .from("organizations")
+      .select(
+        "plan, seat_limit, document_limit, stripe_customer_id, stripe_subscription_id, billing_email, subscription_status, current_period_end",
+      )
+      .eq("id", organizationId)
+      .maybeSingle();
+    data = res.data;
+    error = res.error;
+  }
 
   if (error) {
     console.error("[getOrganizationSubscription] 取得エラー:", error);
@@ -298,7 +333,9 @@ export async function getEffectivePlan(
 }> {
   // 組織が指定されている場合は組織プランを優先
   if (organizationId) {
-    const orgSub = await getOrganizationSubscription(organizationId);
+    const orgSub = await getOrganizationSubscription(organizationId, {
+      requesterUserId: userId,
+    });
     if (orgSub) {
       return {
         plan: orgSub.plan,
@@ -393,8 +430,11 @@ export async function canCreateDocument(
 export async function canAddMember(
   organizationId: string,
   locale: "en" | "ja" = "ja",
+  requesterUserId?: string | null,
 ): Promise<{ allowed: boolean; reason?: string; currentCount?: number; limit?: number }> {
-  const orgSub = await getOrganizationSubscription(organizationId);
+  const orgSub = await getOrganizationSubscription(organizationId, {
+    requesterUserId: requesterUserId ?? null,
+  });
   if (!orgSub) {
     return {
       allowed: false,

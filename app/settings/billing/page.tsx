@@ -64,7 +64,7 @@ export default async function BillingSettingsPage({ searchParams }: BillingPageP
   // アクティブな組織を取得
   const activeOrgId = await getActiveOrganizationId(userId);
   const orgSub = activeOrgId
-    ? await getOrganizationSubscription(activeOrgId)
+    ? await getOrganizationSubscription(activeOrgId, { requesterUserId: userId })
     : null;
 
   // 有効なプラン（個人 or 組織）を取得

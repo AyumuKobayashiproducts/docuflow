@@ -410,6 +410,7 @@ export async function acceptInvitation(
   }
 
   // プラン制限チェック（デフォルトは日本語）
+  // NOTE: 招待受諾時はまだメンバーでない可能性があるため requesterUserId は渡さない（招待トークンが前提）
   const limitCheck = await canAddMember(invitation.organization_id, "ja");
   if (!limitCheck.allowed) {
     return { success: false, error: limitCheck.reason || "メンバー数の上限に達しています。" };

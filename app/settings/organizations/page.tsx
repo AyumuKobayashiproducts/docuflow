@@ -463,7 +463,9 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
     if (selectedOrg) {
       members = await getOrganizationMembers(selectedOrgId);
       userRole = await getUserRoleInOrganization(userId, selectedOrgId);
-      const orgSub = await getOrganizationSubscription(selectedOrgId);
+      const orgSub = await getOrganizationSubscription(selectedOrgId, {
+        requesterUserId: userId,
+      });
       selectedOrgPlan = orgSub?.plan ?? "free";
       selectedOrgLimits = PLAN_LIMITS[selectedOrgPlan];
       
