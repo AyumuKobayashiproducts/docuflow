@@ -40,7 +40,7 @@ export default function EnglishDemoPage() {
 
       <div className="mt-6 flex flex-col sm:flex-row gap-3">
         <Link
-          href="/auth/signup"
+          href="/en/auth/signup"
           className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-400"
         >
           Start free trial

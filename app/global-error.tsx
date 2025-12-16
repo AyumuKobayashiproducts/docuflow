@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
+import { useLocale } from "@/lib/useLocale";
 
 export default function GlobalError({
   error,
@@ -10,6 +11,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const locale = useLocale();
 
   useEffect(() => {
     // Sentry にエラーを送信
@@ -17,7 +19,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang={"ja"}>
+    <html lang={locale}>
       <body>
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-red-50">
           <div className="max-w-md w-full p-8 text-center">
@@ -38,10 +40,14 @@ export default function GlobalError({
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-slate-900 mb-2">
-                {"予期しないエラーが発生しました"}
+                {locale === "en"
+                  ? "An unexpected error occurred"
+                  : "予期しないエラーが発生しました"}
               </h1>
               <p className="text-slate-600 text-sm">
-                {"申し訳ございません。問題が発生しました。\nこの問題は自動的に報告されました。"}
+                {locale === "en"
+                  ? "Sorry — something went wrong.\nThis issue was automatically reported."
+                  : "申し訳ございません。問題が発生しました。\nこの問題は自動的に報告されました。"}
               </p>
             </div>
 
@@ -50,19 +56,19 @@ export default function GlobalError({
                 onClick={() => reset()}
                 className="w-full px-4 py-3 rounded-lg bg-emerald-500 text-white font-medium hover:bg-emerald-400 transition-colors"
               >
-                {"もう一度試す"}
+                {locale === "en" ? "Try again" : "もう一度試す"}
               </button>
               <button
                 onClick={() => (window.location.href = "/")}
                 className="w-full px-4 py-3 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
               >
-                {"ホームに戻る"}
+                {locale === "en" ? "Back to home" : "ホームに戻る"}
               </button>
             </div>
 
             {error.digest && (
               <p className="mt-6 text-xs text-slate-400">
-                {"エラーID: "}
+                {locale === "en" ? "Error ID: " : "エラーID: "}
                 {error.digest}
               </p>
             )}

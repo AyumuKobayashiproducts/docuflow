@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { useLocale } from "@/lib/useLocale";
 
 export default function Error({
   error,
@@ -10,6 +11,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const locale = useLocale();
 
   useEffect(() => {
     console.error(error);
@@ -37,12 +39,22 @@ export default function Error({
 
         {/* Error Message */}
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-          {"エラーが発生しました"}
+          {locale === "en" ? "Something went wrong" : "エラーが発生しました"}
         </h1>
         <p className="text-slate-500 dark:text-slate-400 mb-8">
-          {"申し訳ありません。予期しないエラーが発生しました。"}
-          <br />
-          {"もう一度お試しいただくか、ダッシュボードに戻ってください。"}
+          {locale === "en" ? (
+            <>
+              Sorry — an unexpected error occurred.
+              <br />
+              Please try again, or go back to the dashboard.
+            </>
+          ) : (
+            <>
+              {"申し訳ありません。予期しないエラーが発生しました。"}
+              <br />
+              {"もう一度お試しいただくか、ダッシュボードに戻ってください。"}
+            </>
+          )}
         </p>
 
         {/* Error Details (dev only) */}
@@ -80,7 +92,7 @@ export default function Error({
             className="btn btn-secondary px-6"
           >
             <span>
-              {"ダッシュボードへ"}
+              {locale === "en" ? "Go to dashboard" : "ダッシュボードへ"}
             </span>
           </Link>
         </div>
