@@ -3,8 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabaseBrowserClient";
+import { useLocale } from "@/lib/useLocale";
 
 export function UserMenu() {
+  const locale = useLocale();
+  const withLang = (href: string) => {
+    if (locale !== "en") return href;
+    if (href.includes("lang=en")) return href;
+    if (href.includes("?")) return `${href}&lang=en`;
+    return `${href}?lang=en`;
+  };
+
   const [open, setOpen] = useState(false);
   const [initial, setInitial] = useState<string>("U");
   const [email, setEmail] = useState<string>("");
@@ -38,7 +47,7 @@ export function UserMenu() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white shadow-sm hover:opacity-90"
-        aria-label="ユーザーメニュー"
+        aria-label={locale === "en" ? "User menu" : "ユーザーメニュー"}
       >
         {initial}
       </button>
@@ -49,31 +58,40 @@ export function UserMenu() {
               {initial}
             </div>
             <div className="min-w-0">
-              <p className="text-[12px] font-semibold text-slate-900">アカウント</p>
+              <p className="text-[12px] font-semibold text-slate-900">
+                {locale === "en" ? "Account" : "アカウント"}
+              </p>
               {email && <p className="truncate text-[11px] text-slate-500">{email}</p>}
               {provider && (
                 <p className="mt-0.5 text-[10px] text-emerald-600">
-                  {provider === "google" ? "Google でログイン中" : "メールアドレスでログイン中"}
+                  {provider === "google"
+                    ? locale === "en"
+                      ? "Signed in with Google"
+                      : "Google でログイン中"
+                    : locale === "en"
+                      ? "Signed in with email"
+                      : "メールアドレスでログイン中"}
                 </p>
               )}
             </div>
           </div>
           <Link
-            href="/settings"
+            href={withLang("/settings")}
             className="block px-3 py-2 text-[13px] hover:bg-slate-50"
             onClick={() => setOpen(false)}
           >
-            アカウント設定を開く
+            {locale === "en" ? "Open settings" : "アカウント設定を開く"}
           </Link>
           <button
             type="button"
             className="mt-1 flex w-full items-center justify-between px-3 py-2 text-[13px] text-red-600 hover:bg-red-50 border-t border-slate-100"
             onClick={() => {
               setOpen(false);
-              window.location.href = "/auth/logout";
+              window.location.href =
+                locale === "en" ? "/en/auth/logout" : "/auth/logout";
             }}
           >
-            <span>ログアウト</span>
+            <span>{locale === "en" ? "Log out" : "ログアウト"}</span>
           </button>
         </div>
       )}

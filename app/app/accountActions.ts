@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getPreferredLocale } from "@/lib/serverLocale";
 
 export async function deleteAccount() {
   const cookieStore = await cookies();
@@ -22,5 +23,7 @@ export async function deleteAccount() {
 
   await supabaseAdmin.auth.admin.deleteUser(userId);
 
-  redirect("/auth/logout?accountDeleted=1");
+  const locale = await getPreferredLocale();
+  const logoutPath = locale === "en" ? "/en/auth/logout" : "/auth/logout";
+  redirect(`${logoutPath}?accountDeleted=1`);
 }
