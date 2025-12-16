@@ -55,7 +55,12 @@ async function fastCreateDocument(formData: FormData) {
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
-  const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
+  if (!userId) {
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
+    const redirectTo = locale === "en" ? "/new?lang=en" : "/new";
+    redirect(`${loginPath}?redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
+  const activeOrgId = await getActiveOrganizationId(userId);
 
   let title = String(formData.get("title") ?? "").trim();
   let category = String(formData.get("category") ?? "").trim();
@@ -156,7 +161,12 @@ async function createDocument(formData: FormData) {
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
-  const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
+  if (!userId) {
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
+    const redirectTo = locale === "en" ? "/new?lang=en" : "/new";
+    redirect(`${loginPath}?redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
+  const activeOrgId = await getActiveOrganizationId(userId);
 
   let title = String(formData.get("title") ?? "").trim();
   let category = String(formData.get("category") ?? "").trim();

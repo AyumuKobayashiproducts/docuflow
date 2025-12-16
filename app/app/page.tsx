@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { logActivity } from "@/lib/activityLog";
 import {
@@ -297,8 +298,12 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
-  const activeOrgId = userId ? await getActiveOrganizationId(userId) : null;
-  if (!userId) return;
+  if (!userId) {
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
+    const redirectTo = locale === "en" ? "/app?lang=en" : "/app";
+    redirect(`${loginPath}?redirectTo=${encodeURIComponent(redirectTo)}`);
+  }
+  const activeOrgId = await getActiveOrganizationId(userId);
   const filesFromForm = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
   const fallbackFile = formData.get("file");
   if (filesFromForm.length === 0 && fallbackFile instanceof File && fallbackFile.size > 0) {
