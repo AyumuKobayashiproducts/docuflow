@@ -86,7 +86,7 @@ export default async function PublicSharePage({
             <Link
               href={
                 locale === "en"
-                  ? `/auth/login?redirectTo=${encodeURIComponent("/app?lang=en")}`
+                  ? `/en/auth/login?redirectTo=${encodeURIComponent("/app?lang=en")}`
                   : `/auth/login?redirectTo=${encodeURIComponent("/app")}`
               }
               className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"

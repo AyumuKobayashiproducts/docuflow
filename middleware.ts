@@ -149,6 +149,14 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
+  // Sync cookie with explicit ?lang= when present (URL is the source of truth)
+  const langParam = (req.nextUrl.searchParams.get("lang") ?? "").toLowerCase();
+  if ((langParam === "en" || langParam === "ja") && localeCookie !== langParam) {
+    const res = NextResponse.next();
+    setLocaleCookie(res, langParam as "ja" | "en");
+    return res;
+  }
+
   return NextResponse.next();
 }
 
