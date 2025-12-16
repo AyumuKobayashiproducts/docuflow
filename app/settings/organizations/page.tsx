@@ -435,7 +435,12 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
 
   if (!userId) {
-    redirect("/auth/login");
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
+    redirect(
+      `${loginPath}?redirectTo=${encodeURIComponent(
+        withLang("/settings/organizations"),
+      )}`,
+    );
   }
 
   const memberships = await getUserOrganizations(userId);
