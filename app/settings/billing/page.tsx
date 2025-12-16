@@ -71,18 +71,40 @@ export default async function BillingSettingsPage({ searchParams }: BillingPageP
   const { plan: effectivePlan, type: subscriptionType } =
     await getEffectivePlan(userId, activeOrgId);
 
-  const { data: organizations } = await supabase
-    .from("organizations")
+  // NOTE: organizations は必ず「自分が所属している組織」だけにスコープする（漏洩防止）
+  const { data: orgMemberships, error: orgMembershipsError } = await supabase
+    .from("organization_members")
     .select(
-      "id, name, plan, seat_limit, document_limit, stripe_customer_id, stripe_subscription_id, billing_email, subscription_status, current_period_end",
+      `
+      created_at,
+      organization:organizations (
+        id,
+        name,
+        plan,
+        seat_limit,
+        document_limit,
+        stripe_customer_id,
+        stripe_subscription_id,
+        billing_email,
+        subscription_status,
+        current_period_end
+      )
+    `,
     )
+    .eq("user_id", userId)
     .order("created_at", { ascending: true })
     .limit(5);
 
-  const primaryOrg = (organizations ?? [])[0] as OrganizationRow | undefined;
-  const activeOrg = (
-    (organizations ?? []) as OrganizationRow[]
-  ).find((o) => o.id === activeOrgId) ?? primaryOrg;
+  if (orgMembershipsError) {
+    console.error("[settings/billing] failed to load organizations:", orgMembershipsError);
+  }
+
+  const organizations = (orgMemberships ?? [])
+    .map((row: any) => (Array.isArray(row.organization) ? row.organization[0] : row.organization))
+    .filter(Boolean) as OrganizationRow[];
+
+  const primaryOrg = organizations[0] as OrganizationRow | undefined;
+  const activeOrg = organizations.find((o) => o.id === activeOrgId) ?? primaryOrg;
 
   // Fetch usage metrics for the primary organization
   let documentCount = 0;
