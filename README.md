@@ -65,12 +65,26 @@
 
 | If you want to see... | Go to |
 |:----------------------|:------|
-| The product in action | [**Live Demo**](https://docuflow-azure.vercel.app/app?lang=en) |
+| The product in action (EN) | [**Live App Demo**](https://docuflow-azure.vercel.app/app?lang=en) |
+| Landing page (EN) | [**/en**](https://docuflow-azure.vercel.app/en) |
+| Demo page (EN, no login) | [**/demo/en**](https://docuflow-azure.vercel.app/demo/en) |
 | System architecture | [`docs/architecture.md`](docs/architecture.md) |
 | Database design & RLS | [`docs/db-schema.md`](docs/db-schema.md) |
 | Test strategy | [`tests/`](tests/) · [`e2e/`](e2e/) |
 | CI/CD pipelines | [`.github/workflows/`](.github/workflows) |
 | Security design | [`docs/security.md`](docs/security.md) |
+
+<br />
+
+### 🌍 Language / Locale Behavior (EN-first for international reviewers)
+
+- **Bilingual**: EN / JA
+- **Default**:
+  - Cookie (`docuflow_lang`) wins
+  - Otherwise `Accept-Language`: `ja` → Japanese, everything else → English
+- **Direct links**:
+  - App (EN): `https://docuflow-azure.vercel.app/app?lang=en`
+  - Landing (EN): `https://docuflow-azure.vercel.app/en`
 
 <br />
 
