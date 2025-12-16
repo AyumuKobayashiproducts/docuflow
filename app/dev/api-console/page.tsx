@@ -3,16 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { useLocale } from "@/lib/useLocale";
 
 type HttpMethod = "LIST" | "GET";
 
 export default function ApiConsolePage() {
+  const locale = useLocale();
   const [baseUrl, setBaseUrl] = useState("https://docuflow-azure.vercel.app");
   const [apiKey, setApiKey] = useState("");
   const [method, setMethod] = useState<HttpMethod>("LIST");
   const [documentId, setDocumentId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [responseText, setResponseText] = useState<string | null>(null);
+  const homeHref = locale === "en" ? "/en" : "/";
 
   const handleSend = async () => {
     setIsLoading(true);
@@ -55,10 +58,10 @@ export default function ApiConsolePage() {
             <p className="text-sm text-slate-600">API Console (Developer Preview)</p>
           </div>
           <Link
-            href="/"
+            href={homeHref}
             className="text-xs text-slate-500 hover:text-slate-700"
           >
-            {"← トップに戻る"}
+            {locale === "en" ? "← Back to landing" : "← トップに戻る"}
           </Link>
         </div>
       </header>
@@ -69,7 +72,9 @@ export default function ApiConsolePage() {
             DocuFlow API Playground
           </h1>
           <p className="text-xs text-slate-600">
-            {"`X-API-Key` を使って、ブラウザから直接 `/api/documents` エンドポイントを試せる簡易コンソールです。"}
+            {locale === "en"
+              ? "A lightweight console to test the `/api/documents` endpoint directly from your browser using `X-API-Key`."
+              : "`X-API-Key` を使って、ブラウザから直接 `/api/documents` エンドポイントを試せる簡易コンソールです。"}
           </p>
         </section>
 
@@ -120,7 +125,11 @@ export default function ApiConsolePage() {
                 className="w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
                 value={documentId}
                 onChange={(e) => setDocumentId(e.target.value)}
-                placeholder={"optional (LIST の場合は不要)"}
+                placeholder={
+                  locale === "en"
+                    ? "optional (not needed for LIST)"
+                    : "optional (LIST の場合は不要)"
+                }
                 disabled={method === "LIST"}
               />
             </div>
@@ -142,7 +151,9 @@ export default function ApiConsolePage() {
           </p>
           <pre className="max-h-80 overflow-auto whitespace-pre-wrap text-[11px]">
             {responseText ??
-              ("// ここにレスポンスが表示されます")}
+              (locale === "en"
+                ? "// Response will appear here"
+                : "// ここにレスポンスが表示されます")}
           </pre>
         </section>
       </main>
