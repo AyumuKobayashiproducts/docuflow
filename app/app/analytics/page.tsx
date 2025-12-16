@@ -43,8 +43,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
 
   if (!userId) {
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang("/app/analytics"))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang("/app/analytics"))}`,
     );
   }
 

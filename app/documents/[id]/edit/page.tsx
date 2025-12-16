@@ -158,8 +158,9 @@ export default async function EditDocumentPage({ params, searchParams }: PagePro
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
   if (!userId) {
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(
+      `${loginPath}?redirectTo=${encodeURIComponent(
         withLang(`/documents/${id}/edit`),
       )}`,
     );

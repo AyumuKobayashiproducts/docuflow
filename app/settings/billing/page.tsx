@@ -52,9 +52,10 @@ export default async function BillingSettingsPage({ searchParams }: BillingPageP
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
 
   if (!userId) {
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     const redirectTarget =
       withLang("/settings/billing");
-    redirect(`/auth/login?redirectTo=${encodeURIComponent(redirectTarget)}`);
+    redirect(`${loginPath}?redirectTo=${encodeURIComponent(redirectTarget)}`);
   }
 
   // 個人ユーザーのプラン情報を取得

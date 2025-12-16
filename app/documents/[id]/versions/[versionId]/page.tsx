@@ -109,8 +109,9 @@ export default async function VersionComparePage({ params, searchParams }: PageP
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
   if (!userId) {
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang(`/documents/${id}`))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang(`/documents/${id}`))}`,
     );
   }
 

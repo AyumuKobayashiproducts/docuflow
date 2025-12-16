@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { acceptInvitation, setActiveOrganization } from "@/lib/organizations";
 import { Logo } from "@/components/Logo";
+import { getPreferredLocale } from "@/lib/serverLocale";
 
 type PageProps = {
   params: Promise<{
@@ -18,7 +19,9 @@ export default async function InviteAcceptPage({ params }: PageProps) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
   if (!userId) {
-    redirect(`/auth/login?redirectTo=${encodeURIComponent(`/invite/${token}`)}`);
+    const locale = await getPreferredLocale();
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
+    redirect(`${loginPath}?redirectTo=${encodeURIComponent(`/invite/${token}`)}`);
   }
 
   const res = await acceptInvitation(token, userId);

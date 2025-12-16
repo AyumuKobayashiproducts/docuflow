@@ -53,12 +53,13 @@ async function createOrgAction(formData: FormData) {
     if (href.includes("?")) return `${href}&lang=en`;
     return `${href}?lang=en`;
   };
+  const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
     );
   }
 
@@ -105,12 +106,13 @@ async function inviteAction(formData: FormData) {
     if (href.includes("?")) return `${href}&lang=en`;
     return `${href}?lang=en`;
   };
+  const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
 
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
     );
   }
 
@@ -156,11 +158,12 @@ async function removeMemberAction(formData: FormData) {
     if (href.includes("?")) return `${href}&lang=en`;
     return `${href}?lang=en`;
   };
+  const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
     );
   }
 
@@ -205,11 +208,12 @@ async function changeRoleAction(formData: FormData) {
     if (href.includes("?")) return `${href}&lang=en`;
     return `${href}?lang=en`;
   };
+  const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
     );
   }
 
@@ -263,11 +267,12 @@ async function deleteOrganizationAction(formData: FormData) {
     if (href.includes("?")) return `${href}&lang=en`;
     return `${href}?lang=en`;
   };
+  const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
     );
   }
 
@@ -311,11 +316,12 @@ async function leaveOrganizationAction(formData: FormData) {
     if (href.includes("?")) return `${href}&lang=en`;
     return `${href}?lang=en`;
   };
+  const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
     );
   }
 
@@ -365,11 +371,12 @@ async function transferOwnershipAction(formData: FormData) {
     if (href.includes("?")) return `${href}&lang=en`;
     return `${href}?lang=en`;
   };
+  const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
   const cookieStore = await cookies();
   const userId = cookieStore.get("docuhub_ai_user_id")?.value;
   if (!userId) {
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
+      `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
     );
   }
 

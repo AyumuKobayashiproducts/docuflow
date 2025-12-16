@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getPreferredLocale } from "@/lib/serverLocale";
 
 type WebhookEventRow = {
   id: string;
@@ -30,8 +31,10 @@ export default async function AdminStripeWebhookEventDetailPage({
   const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
 
   if (!userId) {
+    const locale = await getPreferredLocale();
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     redirect(
-      `/auth/login?redirectTo=${encodeURIComponent(
+      `${loginPath}?redirectTo=${encodeURIComponent(
         `/admin/webhooks/${encodeURIComponent(id)}`,
       )}`,
     );
