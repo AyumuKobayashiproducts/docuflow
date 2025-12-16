@@ -22,7 +22,7 @@ DocuFlow のセキュリティ方針と実装の要点をまとめます。
   1. `/auth/login` でメール & パスワードを送信
   2. Supabase Auth がトークンを発行
   3. クライアント側で `docuhub_ai_auth=1` / `docuhub_ai_user_id=<uuid>` を Cookie に保存
-  4. `middleware.ts` で Cookie を参照し、保護ルートへのアクセスを制御
+  4. `proxy.ts` で Cookie を参照し、保護ルートへのアクセスを制御（Next.js 16 以降）
 - フロー（Google ログイン）:
   1. `/auth/login` の「Google でログイン」ボタンから `supabase.auth.signInWithOAuth('google')` を実行
   2. Supabase が Google OAuth で認証し、コールバックでトークンを発行
@@ -31,7 +31,7 @@ DocuFlow のセキュリティ方針と実装の要点をまとめます。
 ### 2.2 認可 (Authorization)
 
 - **アプリケーションレベル**
-  - `middleware.ts` によるルート保護
+  - `proxy.ts` によるルート保護
   - `cookies()` で取得した `docuhub_ai_user_id` を使い、Server Action で対象行をフィルタ
 - **DB レベル (RLS)**  
   `supabase/migrations/20241205_enable_rls.sql` / `20241206_add_organizations.sql` にてポリシー定義。

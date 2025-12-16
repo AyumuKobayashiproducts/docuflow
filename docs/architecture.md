@@ -5,7 +5,7 @@
 - **フロントエンド / BFF**
   - Next.js 16 (App Router)
   - Server Components + Server Actions を中心とした実装
-  - 認証情報はクッキーベースで扱い、`middleware.ts` で保護ルートを制御
+  - 認証情報はクッキーベースで扱い、`proxy.ts` で保護ルートを制御（Next.js 16 以降）
 
 - **バックエンド**
   - Supabase (PostgreSQL + Auth)
@@ -50,7 +50,7 @@
 - ログイン成功時、クライアント側で以下のクッキーを設定:
   - `docuhub_ai_auth=1`
   - `docuhub_ai_user_id=<supabase user id>`
-- `middleware.ts` が `docuhub_ai_auth` を参照し、以下を制御:
+- `proxy.ts` が `docuhub_ai_auth` を参照し、以下を制御:
   - 未認証: `/app`, `/new`, `/documents/*`, `/settings` へのアクセスを `/auth/login` にリダイレクト
   - `/share/[token]` は例外として認証スキップ
 - サーバーコンポーネントでは `cookies()` から `docuhub_ai_user_id` を読み取り、`user_id` による行フィルタを行う。

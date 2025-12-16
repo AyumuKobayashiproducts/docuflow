@@ -32,12 +32,10 @@ function withLangParam(url: URL, locale: "ja" | "en"): URL {
 }
 
 export function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(p + "/")
-  );
+  return PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
-export function middleware(req: NextRequest) {
+function handleProxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const isAuthed = req.cookies.get(AUTH_COOKIE)?.value === "1";
   const localeCookie = req.cookies.get(LOCALE_COOKIE)?.value ?? null;
@@ -209,6 +207,13 @@ export function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
+// Next.js 16 proxy entrypoint (replaces middleware)
+export function proxy(req: NextRequest) {
+  return handleProxy(req);
+}
+
+export default proxy;
+
 export const config = {
   matcher: [
     "/",
@@ -227,3 +232,5 @@ export const config = {
     "/auth/:path*",
   ],
 };
+
+

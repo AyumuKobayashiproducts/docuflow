@@ -5,7 +5,7 @@ import {
   AUTH_COOKIE,
   LOCALE_COOKIE,
   inferPreferredLocale,
-} from "../middleware";
+} from "../proxy";
 
 describe("middleware", () => {
   describe("isProtectedPath", () => {

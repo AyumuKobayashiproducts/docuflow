@@ -341,7 +341,7 @@ So that 誤って上書きしても元に戻せる
 #### 4.1 認証
 
 - メール & パスワードでのサインアップ / ログイン / パスワードリセットができること。
-- ログイン状態はクッキー `docuhub_ai_auth` / `docuhub_ai_user_id` で判定し、`middleware.ts` で `/app`, `/new`, `/documents/*`, `/settings` を保護すること。
+- ログイン状態はクッキー `docuhub_ai_auth` / `docuhub_ai_user_id` で判定し、`proxy.ts` で `/app`, `/new`, `/documents/*`, `/settings` を保護すること（Next.js 16 以降）。
 
 #### 4.2 ドキュメント CRUD
 

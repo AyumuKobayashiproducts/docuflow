@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-export const runtime = "edge";
-
 type VitalsPayload = {
   name: string;
   value: number;
