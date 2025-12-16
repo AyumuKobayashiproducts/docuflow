@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowserClient";
 import { Logo } from "@/components/Logo";
+import { useLocale } from "@/lib/useLocale";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const locale = useLocale();
   const oauthErrorCode = searchParams.get("error");
   const initialError =
     oauthErrorCode === "oauth_callback"
@@ -369,7 +371,7 @@ function LoginForm() {
             <p className="text-center text-sm text-slate-600 dark:text-slate-400">
               アカウントをお持ちでないですか？{" "}
               <Link
-                href="/auth/signup"
+                href={locale === "en" ? "/en/auth/signup" : "/auth/signup"}
                 className="font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors underline-offset-2 hover:underline"
               >
                 新規登録

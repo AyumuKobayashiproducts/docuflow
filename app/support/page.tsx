@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingSimpleLayout } from "@/components/MarketingSimpleLayout";
+import { getPreferredLocale } from "@/lib/serverLocale";
 
 export const metadata: Metadata = {
   title: "サポート | DocuFlow",
@@ -8,7 +9,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "/support" },
 };
 
-export default function SupportPage() {
+export default async function SupportPage() {
+  const locale = await getPreferredLocale();
+  const loginHref = locale === "en" ? "/en/auth/login" : "/auth/login";
   return (
     <MarketingSimpleLayout
       title="サポート"
@@ -37,7 +40,7 @@ export default function SupportPage() {
       <h3>解約はどこから？</h3>
       <p>
         アプリ内の「設定 → 課金」から請求ポータルへ移動できます。{" "}
-        <Link href="/auth/login">ログイン</Link>して操作してください。
+        <Link href={loginHref}>ログイン</Link>して操作してください。
       </p>
 
       <h3>セキュリティについて</h3>

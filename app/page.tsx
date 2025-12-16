@@ -324,7 +324,7 @@ export default async function Home() {
 
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                href={isAuthed ? "/app" : "/auth/signup"}
+                href={isAuthed ? "/app" : signupHref}
                 className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-semibold text-slate-900 hover:bg-white/90"
               >
                 {isAuthed ? "アプリを開く" : "無料で始める"} <ArrowRight className="h-4 w-4" />
@@ -506,7 +506,7 @@ export default async function Home() {
                 ))}
               </ul>
               <Link
-                href="/auth/signup?plan=pro"
+                href={`${signupHref}?plan=pro`}
                 className="block text-center py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white font-semibold transition-all"
               >
                 14日間無料で試す
@@ -534,7 +534,7 @@ export default async function Home() {
                 ))}
               </ul>
               <Link
-                href="/auth/signup?plan=team"
+                href={`${signupHref}?plan=team`}
                 className="block text-center py-3 rounded-full border border-white/10 text-white font-medium hover:bg-white/5 transition-all"
               >
                 14日間無料で試す

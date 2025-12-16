@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { MarketingSimpleLayout } from "@/components/MarketingSimpleLayout";
+import { getPreferredLocale } from "@/lib/serverLocale";
 
 export const metadata: Metadata = {
   title: "デモ | DocuFlow",
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function DemoPage() {
+export default async function DemoPage() {
+  const locale = await getPreferredLocale();
+  const signupHref = locale === "en" ? "/en/auth/signup" : "/auth/signup";
   return (
     <MarketingSimpleLayout
       title="デモ"
@@ -40,7 +43,7 @@ export default function DemoPage() {
 
       <div className="mt-6 flex flex-col sm:flex-row gap-3">
         <Link
-          href="/auth/signup"
+          href={signupHref}
           className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-400"
         >
           無料で始める

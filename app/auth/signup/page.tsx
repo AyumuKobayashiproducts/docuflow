@@ -5,8 +5,10 @@ import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabaseBrowserClient";
 import { Logo } from "@/components/Logo";
 import { getSiteUrl } from "@/lib/getSiteUrl";
+import { useLocale } from "@/lib/useLocale";
 
 export default function SignupPage() {
+  const locale = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -53,12 +55,13 @@ export default function SignupPage() {
 
     // 実行時に正しいURLを取得（本番環境では常に本番URLを使用）
     const siteUrl = getSiteUrl();
+    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
 
     const { error: signUpError } = await supabaseBrowser.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${siteUrl}/auth/login`,
+        emailRedirectTo: `${siteUrl}${loginPath}`,
       },
     });
 
@@ -125,7 +128,7 @@ export default function SignupPage() {
             <Logo />
             <div className="flex items-center gap-3">
               <Link
-                href="/auth/login"
+                href={locale === "en" ? "/en/auth/login" : "/auth/login"}
                 className="text-sm font-medium text-slate-600 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 transition-colors"
               >
                 ログインへ戻る
@@ -382,7 +385,7 @@ export default function SignupPage() {
             <p className="text-center text-sm text-slate-600 dark:text-slate-400">
               すでにアカウントをお持ちですか？{" "}
               <Link
-                href="/auth/login"
+                href={locale === "en" ? "/en/auth/login" : "/auth/login"}
                 className="font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors underline-offset-2 hover:underline"
               >
                 ログイン
