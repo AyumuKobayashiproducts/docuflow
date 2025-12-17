@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CreditCard, Trash2, Plus } from "lucide-react";
 import { StripeProvider } from "@/components/StripeProvider";
 import { StripeCardElement } from "@/components/StripeCardElement";
@@ -31,11 +31,7 @@ export function PaymentMethodsSection({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchPaymentMethods();
-  }, []);
-
-  const fetchPaymentMethods = async () => {
+  const fetchPaymentMethods = useCallback(async () => {
     try {
       const response = await fetch(
         `/api/billing/payment-methods?type=${subscriptionType}`,
@@ -47,7 +43,11 @@ export function PaymentMethodsSection({
     } finally {
       setLoading(false);
     }
-  };
+  }, [subscriptionType]);
+
+  useEffect(() => {
+    fetchPaymentMethods();
+  }, [fetchPaymentMethods]);
 
   const handleAddPaymentMethod = async () => {
     try {

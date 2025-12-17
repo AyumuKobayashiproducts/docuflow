@@ -27,6 +27,12 @@ vi.mock("@/lib/supabaseClient", () => ({
   },
 }));
 
+// In CI, SUPABASE_SERVICE_ROLE_KEY is set and supabaseAdmin becomes available.
+// logActivity prefers supabaseAdmin over supabase, so we force it to null in unit tests.
+vi.mock("@/lib/supabaseAdmin", () => ({
+  supabaseAdmin: null,
+}));
+
 // activityLog calls getActiveOrganizationId() unless organizationId is explicitly provided.
 // For unit tests, keep it deterministic and avoid depending on Supabase query builder mocks.
 vi.mock("../lib/organizations", () => ({

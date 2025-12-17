@@ -151,7 +151,7 @@ function LoginForm() {
           {/* Testimonial */}
           <div className="mt-16 p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 animate-fade-in-up stagger-4">
             <p className="text-white/90 italic mb-4">
-              "議事録や仕様書の整理が劇的に楽になりました。AI 要約のおかげで必要な情報にすぐアクセスできます。"
+              &quot;議事録や仕様書の整理が劇的に楽になりました。AI 要約のおかげで必要な情報にすぐアクセスできます。&quot;
             </p>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">

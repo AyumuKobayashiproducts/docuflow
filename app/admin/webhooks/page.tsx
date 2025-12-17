@@ -162,7 +162,7 @@ export default async function AdminStripeWebhooksPage() {
         {error && (
           <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
             {t("取得に失敗しました: ", "Failed to fetch: ")}
-            {(error as any)?.message ?? String(error)}
+            {error instanceof Error ? error.message : String(error)}
           </div>
         )}
 

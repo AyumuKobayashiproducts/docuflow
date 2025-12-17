@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { supabase } from "@/lib/supabaseClient";
 import { BillingScopeError, getBillingScopeOrThrow } from "@/lib/billingScope";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
