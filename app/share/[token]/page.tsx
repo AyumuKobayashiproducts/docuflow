@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { Logo } from "@/components/Logo";
 import { getLocaleFromParam, type Locale } from "@/lib/i18n";
+import { getPreferredLocale } from "@/lib/serverLocale";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,10 @@ export default async function PublicSharePage({
 }: PageProps) {
   const { token } = await params;
   const sp = await searchParams;
-  const locale: Locale = getLocaleFromParam(sp?.lang);
+  // Locale priority:
+  // - explicit ?lang
+  // - cookie / Accept-Language (server-side inference)
+  const locale: Locale = sp?.lang ? getLocaleFromParam(sp.lang) : await getPreferredLocale();
 
   const getTagsArray = (tags: unknown): string[] => {
     if (Array.isArray(tags)) {
@@ -81,6 +85,9 @@ export default async function PublicSharePage({
   };
 
   const tags = getTagsArray(doc.tags);
+  const createdAtLabel = doc.created_at
+    ? new Date(doc.created_at).toLocaleString(locale === "en" ? "en-US" : "ja-JP")
+    : (locale === "en" ? "—" : "—");
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -127,11 +134,11 @@ export default async function PublicSharePage({
                     {doc.category}
                   </span>
                 )}
-                <time dateTime={doc.created_at}>
-                  {new Date(doc.created_at).toLocaleString(
-                    locale === "en" ? "en-US" : "ja-JP",
-                  )}
-                </time>
+                {doc.created_at ? (
+                  <time dateTime={doc.created_at}>{createdAtLabel}</time>
+                ) : (
+                  <span>{createdAtLabel}</span>
+                )}
               </div>
             </div>
 
