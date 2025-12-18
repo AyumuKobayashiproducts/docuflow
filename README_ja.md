@@ -60,27 +60,27 @@
 <div align="center">
 
 ### Dashboard
-<img src="docs/screenshots/dashboard-main.png" alt="Dashboard" width="100%" />
+<img src="public/screenshots/dashboard.png" alt="Dashboard" width="100%" />
 
 <table>
   <tr>
     <td width="50%">
       <p><strong>新規作成（AI処理）</strong></p>
-      <img src="docs/screenshots/new-document-page.png" alt="New document" width="100%" />
+      <img src="public/screenshots/new-document.png" alt="New document" width="100%" />
     </td>
     <td width="50%">
       <p><strong>詳細（要約・タグ・共有）</strong></p>
-      <img src="docs/screenshots/document-detail-view.png" alt="Document detail" width="100%" />
+      <img src="public/screenshots/document-detail.png" alt="Document detail" width="100%" />
     </td>
   </tr>
   <tr>
     <td width="50%">
       <p><strong>共有ページ（閲覧専用）</strong></p>
-      <img src="docs/screenshots/share-view.png" alt="Share view" width="100%" />
+      <img src="public/screenshots/share-view.png" alt="Share view" width="100%" />
     </td>
     <td width="50%">
       <p><strong>設定 / 組織</strong></p>
-      <img src="docs/screenshots/settings-page.png" alt="Settings" width="100%" />
+      <img src="public/screenshots/settings.png" alt="Settings" width="100%" />
     </td>
   </tr>
 </table>
