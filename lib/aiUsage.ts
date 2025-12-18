@@ -1,7 +1,10 @@
 import { supabaseAdmin } from "./supabaseAdmin";
 import { getEffectivePlan } from "./subscription";
+import { checkRateLimit } from "./rateLimiter";
 
 type Locale = "ja" | "en";
+
+const GLOBAL_AI_LIMIT_ENV = "DOCUFLOW_AI_GLOBAL_MONTHLY_LIMIT";
 
 function scopeForUsage(userId: string | null, organizationId: string | null): {
   scopeType: "personal" | "organization";
@@ -77,6 +80,30 @@ export async function consumeAICallsWithLimit(
   };
 }
 
+async function consumeGlobalAICallsWithLimit(
+  limit: number | null,
+  count: number,
+): Promise<{ allowed: boolean; calls: number }> {
+  if (!supabaseAdmin) {
+    return { allowed: true, calls: 0 };
+  }
+
+  const { data, error } = await supabaseAdmin.rpc("consume_ai_usage_global", {
+    p_limit: limit ?? -1,
+    p_count: count,
+  });
+  if (error) {
+    console.error("[aiUsage] consume_ai_usage_global error:", error);
+    // best-effort allow if migration not applied
+    return { allowed: true, calls: 0 };
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return {
+    allowed: Boolean(row?.allowed),
+    calls: Number(row?.calls ?? 0),
+  };
+}
+
 /**
  * 現在の有効プランの月間AI上限に対して、count回分を消費できるかチェックして消費する
  */
@@ -88,6 +115,33 @@ export async function ensureAndConsumeAICalls(
 ): Promise<void> {
   if (!userId) {
     throw new Error(locale === "en" ? "Please sign in." : "ログインしてください。");
+  }
+
+  // Demo safety: short-term rate limit (best-effort; per-instance)
+  // Avoids burst abuse like repeatedly clicking "regenerate" buttons.
+  if (!checkRateLimit(`ai:${userId}`, 30)) {
+    throw new Error(
+      locale === "en"
+        ? "Too many AI requests. Please wait a moment and try again."
+        : "AIリクエストが多すぎます。少し待ってからお試しください。",
+    );
+  }
+
+  // Global budget (project-wide) to protect your OpenAI bill.
+  const rawGlobalLimit = process.env[GLOBAL_AI_LIMIT_ENV] ?? "";
+  const parsed = Number(rawGlobalLimit);
+  const globalLimit =
+    Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : null;
+  if (globalLimit !== null) {
+    const global = await consumeGlobalAICallsWithLimit(globalLimit, count);
+    if (!global.allowed) {
+      const limitText = globalLimit.toLocaleString();
+      throw new Error(
+        locale === "en"
+          ? `AI is temporarily disabled because the monthly global budget (${limitText}) has been reached.`
+          : `月間の全体AI予算（${limitText}回）に達したため、AI機能は一時停止中です。`,
+      );
+    }
   }
 
   const { limits } = await getEffectivePlan(userId, organizationId);
