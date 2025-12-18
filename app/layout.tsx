@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { AppClientShell } from "@/components/AppClientShell";
 import { getPreferredLocale } from "@/lib/serverLocale";
 
 const geistSans = Geist({
@@ -141,7 +140,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-200`}
       >
-        <AppClientShell>{children}</AppClientShell>
+        {children}
       </body>
     </html>
   );
