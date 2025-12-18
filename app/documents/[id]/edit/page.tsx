@@ -110,24 +110,61 @@ async function updateDocument(formData: FormData) {
     console.error("Failed to insert document_versions:", e);
   }
 
-  // 編集時の要約/埋め込み更新はAI呼び出しとして消費（ドキュメントの組織スコープに紐づける）
+  // AI は best-effort:
+  // - 予算超過 / OpenAI障害があっても「編集保存」自体は継続し、AI要約/タグ/埋め込みだけスキップする
   const orgId = currentDoc.organization_id ?? null;
-  if (process.env.OPENAI_API_KEY) {
-    // summary+tags + embedding
-    await ensureAndConsumeAICalls(cookieUserId, orgId, 2, locale);
+  const aiEnabled = Boolean(process.env.OPENAI_API_KEY);
+  let canUseAi = false;
+  let aiDetails: string | null = null;
+  let nextSummary: string | undefined;
+  let nextTags: string[] | undefined;
+
+  if (aiEnabled) {
+    try {
+      // summary+tags + embedding
+      await ensureAndConsumeAICalls(cookieUserId, orgId, 2, locale);
+      canUseAi = true;
+    } catch (e) {
+      console.error("[updateDocument] AI budget/rate limit hit:", e);
+      aiDetails = "ai_skipped_budget_or_rate_limit";
+    }
+  } else {
+    aiDetails = "ai_skipped_disabled";
   }
 
-  const { summary, tags } = await generateSummaryAndTags(rawContent);
+  if (canUseAi) {
+    try {
+      const generated = await generateSummaryAndTags(rawContent);
+      nextSummary = generated.summary;
+      nextTags = generated.tags;
+    } catch (e) {
+      console.error("[updateDocument] AI generate failed:", e);
+      aiDetails = "ai_skipped_generation_failed";
+      canUseAi = false;
+    }
+  }
+
+  type DocumentUpdate = {
+    title: string;
+    category: string;
+    raw_content: string;
+    summary?: string;
+    tags?: string[];
+  };
+
+  const updatePayload: DocumentUpdate = {
+    title,
+    category: category || (locale === "en" ? "Uncategorized" : "未分類"),
+    raw_content: rawContent,
+  };
+  if (nextSummary !== undefined && nextTags !== undefined) {
+    updatePayload.summary = nextSummary;
+    updatePayload.tags = nextTags;
+  }
 
   const { error } = await supabase
     .from("documents")
-    .update({
-      title,
-      category: category || (locale === "en" ? "Uncategorized" : "未分類"),
-      raw_content: rawContent,
-      summary,
-      tags,
-    })
+    .update(updatePayload)
     .eq("id", id)
     .eq("user_id", cookieUserId);
 
@@ -143,10 +180,11 @@ async function updateDocument(formData: FormData) {
   await logActivity("update_document", {
     documentId: id,
     documentTitle: title,
+    details: aiDetails ?? undefined,
   });
 
-  // 本文が変わったら埋め込みも更新（OpenAIが有効な場合のみ）
-  if (process.env.OPENAI_API_KEY) {
+  // 本文が変わったら埋め込みも更新（AIが有効かつ予算OKの場合のみ）
+  if (aiEnabled && canUseAi) {
     updateDocumentEmbedding(id, rawContent, cookieUserId).catch(console.error);
   }
 
@@ -268,8 +306,8 @@ export default async function EditDocumentPage({ params, searchParams }: PagePro
               </label>
               <p className="mb-2 text-xs text-slate-500">
                 {locale === "en"
-                  ? "A new summary and tags will be generated from the updated content."
-                  : "編集後の本文をもとに、要約とタグを再生成します。"}
+                  ? "If AI is available, a new summary and tags will be generated from the updated content."
+                  : "AIが利用可能な場合、編集後の本文をもとに要約とタグを再生成します。"}
               </p>
               <textarea
                 id="rawContent"
@@ -284,16 +322,16 @@ export default async function EditDocumentPage({ params, searchParams }: PagePro
             <div className="flex items-center justify-between pt-2">
               <p className="text-xs text-slate-500">
                 {locale === "en"
-                  ? "Saving will also update the AI summary and tags."
-                  : "保存すると、AI による要約とタグも更新されます。"}
+                  ? "Saving may also update the AI summary and tags (best-effort)."
+                  : "保存時にAI要約とタグも更新されます（best-effort）。"}
               </p>
               <button
                 type="submit"
                 className="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow hover:bg-slate-800"
               >
                 {locale === "en"
-                  ? "Update & re-summarize"
-                  : "更新して再要約"}
+                  ? "Update"
+                  : "更新"}
               </button>
             </div>
           </form>

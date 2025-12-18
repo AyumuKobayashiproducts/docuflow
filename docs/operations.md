@@ -61,6 +61,12 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 # 本番URL（パスワードリセット等）
 NEXT_PUBLIC_SITE_URL=https://docuflow-azure.vercel.app
 
+# AIコスト制御（オプション）
+# - プロジェクト全体の「月間AI呼び出し回数」上限
+# - 例: 300 → 月300回を超えたらAI機能は一時停止（ドキュメント作成/編集は継続）
+# - 0 にするとAIを常に停止
+DOCUFLOW_AI_GLOBAL_MONTHLY_LIMIT=300
+
 # 運用者（オーナー）ユーザーID（管理ページの保護用）
 # Supabase Auth の user_id（UUID）を指定
 DOCUFLOW_OWNER_USER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
@@ -191,6 +197,24 @@ npm install package@latest
 1. OpenAI API キーの有効性を確認
 2. API レート制限に達していないか確認
 3. リクエストログでエラー内容を確認
+
+#### 追加チェック: グローバル月次予算の到達（AIを意図的に停止しているケース）
+
+- **症状**:
+  - AI要約/タグ生成だけ失敗する（作成/編集/保存などの基本操作は継続）
+  - 例外文言に「月間の全体AI予算に達したため…」が出る
+- **確認方法（Supabase SQL Editor）**:
+
+```sql
+-- 今月のグローバルAI利用状況
+select *
+from public.ai_usage_global_monthly
+where month_start = date_trunc('month', now())::date;
+```
+
+- **対処**:
+  - `DOCUFLOW_AI_GLOBAL_MONTHLY_LIMIT` を引き上げる（Vercel環境変数）
+  - 月替わりを待つ（`month_start` が変わると自動的に新しい行に切り替わる）
 
 ---
 
