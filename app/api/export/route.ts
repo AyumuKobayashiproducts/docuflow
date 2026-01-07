@@ -1,13 +1,12 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { checkRateLimit } from "@/lib/rateLimiter";
+import { getAuthedUserId } from "@/lib/authSession";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     return NextResponse.json(

@@ -54,7 +54,11 @@ USING (
 );
 
 -- 3) get_shared_document: enforce expiry inside DB (so client can't bypass by querying table)
-CREATE OR REPLACE FUNCTION get_shared_document(p_share_token TEXT)
+-- NOTE: Postgres cannot change the OUT row type with CREATE OR REPLACE.
+-- Drop first to allow evolving the return columns safely.
+DROP FUNCTION IF EXISTS public.get_shared_document(TEXT);
+
+CREATE OR REPLACE FUNCTION public.get_shared_document(p_share_token TEXT)
 RETURNS TABLE (
   id UUID,
   title TEXT,
@@ -87,6 +91,6 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_shared_document(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_shared_document(TEXT) TO anon, authenticated;
 
 

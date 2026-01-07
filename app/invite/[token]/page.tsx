@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { acceptInvitation, setActiveOrganization } from "@/lib/organizations";
+import { getAuthedUserId } from "@/lib/authSession";
 import { Logo } from "@/components/Logo";
 import { getPreferredLocale } from "@/lib/serverLocale";
 
@@ -23,8 +23,7 @@ export default async function InviteAcceptPage({ params }: PageProps) {
     return `${href}?lang=en`;
   };
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     redirect(`${loginPath}?redirectTo=${encodeURIComponent(`/invite/${token}`)}`);

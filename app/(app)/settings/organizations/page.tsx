@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Logo } from "@/components/Logo";
 import { supabase } from "@/lib/supabaseClient";
+import { getAuthedUserId } from "@/lib/authSession";
 import {
   getUserOrganizations,
   createOrganization,
@@ -56,8 +57,7 @@ async function createOrgAction(formData: FormData) {
   };
   const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value;
+  const userId = await getAuthedUserId();
   if (!userId) {
     redirect(
       `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
@@ -103,8 +103,7 @@ async function inviteAction(formData: FormData) {
   };
   const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value;
+  const userId = await getAuthedUserId();
   if (!userId) {
     redirect(
       `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
@@ -154,8 +153,7 @@ async function removeMemberAction(formData: FormData) {
     return `${href}?lang=en`;
   };
   const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value;
+  const userId = await getAuthedUserId();
   if (!userId) {
     redirect(
       `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
@@ -204,8 +202,7 @@ async function changeRoleAction(formData: FormData) {
     return `${href}?lang=en`;
   };
   const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value;
+  const userId = await getAuthedUserId();
   if (!userId) {
     redirect(
       `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
@@ -263,8 +260,7 @@ async function deleteOrganizationAction(formData: FormData) {
     return `${href}?lang=en`;
   };
   const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value;
+  const userId = await getAuthedUserId();
   if (!userId) {
     redirect(
       `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
@@ -290,6 +286,7 @@ async function deleteOrganizationAction(formData: FormData) {
   }
 
   // 削除した組織がアクティブならCookieを消す
+  const cookieStore = await cookies();
   cookieStore.delete("docuflow_active_org");
 
   revalidatePath("/settings/organizations");
@@ -312,8 +309,7 @@ async function leaveOrganizationAction(formData: FormData) {
     return `${href}?lang=en`;
   };
   const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value;
+  const userId = await getAuthedUserId();
   if (!userId) {
     redirect(
       `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
@@ -342,6 +338,7 @@ async function leaveOrganizationAction(formData: FormData) {
   }
 
   // 退出した組織がアクティブならCookieを消す
+  const cookieStore = await cookies();
   const activeOrg = cookieStore.get("docuflow_active_org")?.value ?? null;
   if (activeOrg && activeOrg === organizationId) {
     cookieStore.delete("docuflow_active_org");
@@ -367,8 +364,7 @@ async function transferOwnershipAction(formData: FormData) {
     return `${href}?lang=en`;
   };
   const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value;
+  const userId = await getAuthedUserId();
   if (!userId) {
     redirect(
       `${loginPath}?redirectTo=${encodeURIComponent(withLang("/settings/organizations"))}`,
@@ -426,8 +422,7 @@ export default async function OrganizationsPage({ searchParams }: PageProps) {
   const orgMsg = params?.orgMsg;
   const orgError = params?.orgError;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";

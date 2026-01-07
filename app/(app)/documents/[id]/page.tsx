@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
-import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabaseClient";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getAuthedUserId } from "@/lib/authSession";
 import { logActivity } from "@/lib/activityLog";
 import { generateSummaryAndTags } from "@/lib/ai";
 import { getEffectivePlan } from "@/lib/subscription";
@@ -81,13 +81,20 @@ async function deleteDocument(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim() || null;
   if (!id) return;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
-  const { error } = await supabase
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
+  const { error } = await supabaseAdmin
     .from("documents")
     .delete()
     .eq("id", id)
@@ -117,13 +124,20 @@ async function toggleArchived(formData: FormData) {
   const next = String(formData.get("next") ?? "") === "true";
   if (!id) return;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
-  const { error } = await supabase
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
+  const { error } = await supabaseAdmin
     .from("documents")
     .update({ is_archived: next })
     .eq("id", id)
@@ -154,14 +168,21 @@ async function enableShare(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim() || null;
   if (!id) return;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
   // ドキュメントの組織スコープを取得して、共有リンク可否をチェック
-  const { data: meta } = await supabase
+  const { data: meta } = await supabaseAdmin
     .from("documents")
     .select("organization_id")
     .eq("id", id)
@@ -191,7 +212,7 @@ async function enableShare(formData: FormData) {
         ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("documents")
     .update({
       share_token: token,
@@ -223,13 +244,20 @@ async function disableShare(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim() || null;
   if (!id) return;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
-  const { error } = await supabase
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
+  const { error } = await supabaseAdmin
     .from("documents")
     .update({
       share_token: null,
@@ -263,14 +291,21 @@ async function regenerateShare(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim() || null;
   if (!id) return;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
   // ドキュメントの組織スコープを取得して、共有リンク可否をチェック
-  const { data: meta } = await supabase
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
+  const { data: meta } = await supabaseAdmin
     .from("documents")
     .select("organization_id")
     .eq("id", id)
@@ -296,7 +331,7 @@ async function regenerateShare(formData: FormData) {
         ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("documents")
     .update({
       share_token: token,
@@ -332,13 +367,20 @@ async function updateShareExpiry(formData: FormData) {
   const value = String(formData.get("expiry") ?? "").trim(); // "none" or days as string
   if (!id || !value) return;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
-  const { data: meta } = await supabase
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
+  const { data: meta } = await supabaseAdmin
     .from("documents")
     .select("organization_id, share_token")
     .eq("id", id)
@@ -392,7 +434,7 @@ async function updateShareExpiry(formData: FormData) {
     shareExpiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
   }
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("documents")
     .update({ share_expires_at: shareExpiresAt })
     .eq("id", id)
@@ -425,13 +467,21 @@ async function addComment(formData: FormData) {
   const content = String(formData.get("content") ?? "").trim();
   if (!documentId || !content) return;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
-  const { data: docMeta } = await supabase
+  // NOTE: サーバー側は署名付きセッションcookieを正とした認可を行うため、DB操作は service_role（supabaseAdmin）で行う。
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
+  const { data: docMeta } = await supabaseAdmin
     .from("documents")
     .select("organization_id")
     .eq("id", documentId)
@@ -449,7 +499,7 @@ async function addComment(formData: FormData) {
     );
   }
 
-  const { error } = await supabase.from("document_comments").insert({
+  const { error } = await supabaseAdmin.from("document_comments").insert({
     document_id: documentId,
     user_id: userId,
     content,
@@ -477,13 +527,20 @@ async function regenerateSummary(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
-  const { data, error } = await supabase
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
+  const { data, error } = await supabaseAdmin
     .from("documents")
     .select("raw_content,title,organization_id,user_id")
     .eq("id", id)
@@ -504,7 +561,7 @@ async function regenerateSummary(formData: FormData) {
 
   const { summary, tags } = await generateSummaryAndTags(data.raw_content);
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await supabaseAdmin
     .from("documents")
     .update({ summary, tags })
     .eq("id", id)
@@ -539,8 +596,7 @@ export default async function DocumentDetailPage({ params, searchParams }: PageP
     return `${href}?lang=en`;
   };
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     redirect(
@@ -550,7 +606,15 @@ export default async function DocumentDetailPage({ params, searchParams }: PageP
     );
   }
 
-  const { data, error } = await supabase
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
+  const { data, error } = await supabaseAdmin
     .from("documents")
     .select("*")
     .eq("id", id)

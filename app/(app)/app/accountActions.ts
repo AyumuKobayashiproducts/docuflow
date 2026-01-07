@@ -1,14 +1,13 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getPreferredLocale } from "@/lib/serverLocale";
+import { getAuthedUserId } from "@/lib/authSession";
 
 export async function deleteAccount() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) return;
 
   if (!supabaseAdmin) {

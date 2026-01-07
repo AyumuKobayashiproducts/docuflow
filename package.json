@@ -20,7 +20,9 @@
     "test:e2e:headed": "playwright test --headed",
     "validate": "npm run lint && npm run type-check && npm run test",
     "generate-icons": "node scripts/generate-pwa-icons.js",
-    "seed:demo": "tsx scripts/seed-demo-data.ts"
+    "seed:demo": "tsx scripts/seed-demo-data.ts",
+    "db:migrations:print": "tsx scripts/print-all-migrations.ts",
+    "db:migrations:copy:mac": "tsx scripts/print-all-migrations.ts | pbcopy"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.29.0",

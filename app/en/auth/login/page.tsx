@@ -41,11 +41,19 @@ function LoginFormEn() {
       return;
     }
 
-    document.cookie = "docuhub_ai_auth=1; path=/;";
+    const accessToken = data.session?.access_token ?? "";
+    if (!accessToken) {
+      setError("Login failed. Please try again.");
+      return;
+    }
 
-    const userId = data.user?.id;
-    if (userId) {
-      document.cookie = `docuhub_ai_user_id=${userId}; path=/;`;
+    const resp = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!resp.ok) {
+      setError("Login failed. Please try again.");
+      return;
     }
 
     setStatus("Logged in.");

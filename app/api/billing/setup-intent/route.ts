@@ -1,8 +1,8 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabaseClient";
 import { BillingScopeError, getBillingScopeOrThrow } from "@/lib/billingScope";
+import { getAuthedUserId } from "@/lib/authSession";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-06-20",
@@ -13,8 +13,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
  * クライアント側でカード情報を安全に収集するために使用
  */
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     return NextResponse.json(

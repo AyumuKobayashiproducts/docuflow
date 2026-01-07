@@ -1,16 +1,15 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabaseClient";
 import { getActiveOrganizationId } from "@/lib/organizations";
+import { getAuthedUserId } from "@/lib/authSession";
 
 /**
  * Stripe Customer Portal セッションを作成
  * ユーザーがサブスクリプションを管理（キャンセル、プラン変更など）できる
  */
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     return NextResponse.json(

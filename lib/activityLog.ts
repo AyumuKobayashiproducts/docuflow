@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabaseClient";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getActiveOrganizationId } from "./organizations";
+import { getAuthedUserId } from "@/lib/authSession";
 
 type ActivityAction =
   | "create_document"
@@ -36,9 +36,7 @@ export async function logActivity(
   action: ActivityAction,
   payload: ActivityPayload = {}
 ) {
-  const cookieStore = await cookies();
-  const userId =
-    payload.userId ?? cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = payload.userId ?? (await getAuthedUserId());
 
   if (!userId) return;
 

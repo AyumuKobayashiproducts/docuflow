@@ -9,11 +9,20 @@ export default function LogoutPage() {
   const locale = useLocale();
 
   useEffect(() => {
-    // 認証用クッキーを削除
-    document.cookie = "docuhub_ai_auth=; path=/; max-age=0";
-    document.cookie = "docuhub_ai_user_id=; path=/; max-age=0";
-    const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
-    router.replace(loginPath);
+    let active = true;
+    (async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } finally {
+        if (!active) return;
+        const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
+        router.replace(loginPath);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [router, locale]);
 
   return (

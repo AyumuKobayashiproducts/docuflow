@@ -43,17 +43,19 @@ npm install
 
 ## 4. 環境変数の設定
 
-### 4.1 `.env.example` から `.env.local` を作成
+### 4.1 `docs/env.example` から `.env.local` を作成
 
 ```bash
-cp .env.example .env.local
+cp docs/env.example .env.local
 ```
 
-`./.env.example` には、必要な環境変数がコメント付きで定義されています。  
+`docs/env.example` には、必要な環境変数がコメント付きで定義されています。  
 最低限、以下を埋めてください:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`（サーバー側のDB操作に必須）
+- `AUTH_COOKIE_SECRET`（署名付きセッションcookieに必須）
 - `OPENAI_API_KEY`
 - `NEXT_PUBLIC_SITE_URL`（例: `http://localhost:3000`）
 
@@ -71,6 +73,13 @@ Sentry / Resend などは **未設定でも動作** します（モニタリン�
    - `documents`, `document_versions`, `activity_logs`, `document_comments`
    - `organizations`, `organization_members`, `organization_invitations`
    - `notifications`
+
+#### 1回のコピペで済ませたい（回線都合で 5432 に繋がらない場合にも有効）
+
+```bash
+# macOS: 全マイグレーションSQLをクリップボードへ（そのままSQL Editorに貼り付けて Run）
+npm run db:migrations:copy:mac
+```
 
 ### 5.2 GitHub Actions から自動適用（運用フェーズ）
 

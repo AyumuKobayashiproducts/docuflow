@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   isProtectedPath,
   PROTECTED_PATHS,
-  AUTH_COOKIE,
   LOCALE_COOKIE,
   inferPreferredLocale,
 } from "../proxy";
+import { SESSION_COOKIE } from "../lib/sessionCookie";
 
 describe("middleware", () => {
   describe("isProtectedPath", () => {
@@ -49,12 +49,12 @@ describe("middleware", () => {
       expect(PROTECTED_PATHS).toContain("/settings");
     });
 
-    it("AUTH_COOKIEが正しく定義されている", () => {
-      expect(AUTH_COOKIE).toBe("docuhub_ai_auth");
-    });
-
     it("LOCALE_COOKIEが正しく定義されている", () => {
       expect(LOCALE_COOKIE).toBe("docuflow_lang");
+    });
+
+    it("SESSION_COOKIEが正しく定義されている", () => {
+      expect(SESSION_COOKIE).toBe("docuhub_ai_session");
     });
   });
 

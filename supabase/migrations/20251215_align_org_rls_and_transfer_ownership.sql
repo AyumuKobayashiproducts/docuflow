@@ -6,6 +6,10 @@
 -- 1) organization_members: allow org members to view membership list
 drop policy if exists "Users can view own memberships" on public.organization_members;
 drop policy if exists "Owners can manage memberships" on public.organization_members;
+drop policy if exists "Org members can view memberships" on public.organization_members;
+drop policy if exists "Owner/admin can add members" on public.organization_members;
+drop policy if exists "Owner can update member roles" on public.organization_members;
+drop policy if exists "Owner/admin can remove members" on public.organization_members;
 
 create policy "Org members can view memberships"
 on public.organization_members for select
@@ -88,6 +92,8 @@ using (
 -- 2) organization_invitations: align with app behavior
 drop policy if exists "Users can view invitations for their orgs" on public.organization_invitations;
 drop policy if exists "Owners can manage invitations" on public.organization_invitations;
+drop policy if exists "Owner/admin can view invitations" on public.organization_invitations;
+drop policy if exists "Owner/admin can manage invitations" on public.organization_invitations;
 
 -- Only owner/admin can view invitations (avoid email leakage to members)
 create policy "Owner/admin can view invitations"

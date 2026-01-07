@@ -1,8 +1,8 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import { getLocaleFromParam, type Locale } from "@/lib/i18n";
+import { getAuthedUserId } from "@/lib/authSession";
 
 type DailyCount = {
   date: string;
@@ -39,8 +39,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     return `${href}?lang=en`;
   };
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     redirect(

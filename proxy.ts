@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, getAuthedUserIdFromCookieValue } from "@/lib/sessionCookie";
 
 export const PROTECTED_PATHS = ["/app", "/new", "/documents", "/settings"];
-export const AUTH_COOKIE = "docuhub_ai_auth";
 export const LOCALE_COOKIE = "docuflow_lang";
 
 export function inferPreferredLocale(
@@ -35,9 +35,12 @@ export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
-function handleProxy(req: NextRequest) {
+async function handleProxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
-  const isAuthed = req.cookies.get(AUTH_COOKIE)?.value === "1";
+  const userId = await getAuthedUserIdFromCookieValue(
+    req.cookies.get(SESSION_COOKIE)?.value,
+  );
+  const isAuthed = Boolean(userId);
   const localeCookie = req.cookies.get(LOCALE_COOKIE)?.value ?? null;
   const preferredLocale = inferPreferredLocale(
     localeCookie,
@@ -208,8 +211,8 @@ function handleProxy(req: NextRequest) {
 }
 
 // Next.js 16 proxy entrypoint (replaces middleware)
-export function proxy(req: NextRequest) {
-  return handleProxy(req);
+export async function proxy(req: NextRequest) {
+  return await handleProxy(req);
 }
 
 export default proxy;

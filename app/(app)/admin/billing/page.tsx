@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import Stripe from "stripe";
 import { Logo } from "@/components/Logo";
 import { getPreferredLocale } from "@/lib/serverLocale";
+import { getAuthedUserId } from "@/lib/authSession";
 
 function getOwnerUserId(): string | null {
   const ownerUserId = process.env.DOCUFLOW_OWNER_USER_ID;
@@ -47,8 +47,7 @@ export default async function AdminBillingConfigPage() {
     return `${href}?lang=en`;
   };
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     redirect(`${loginPath}?redirectTo=${encodeURIComponent("/admin/billing")}`);

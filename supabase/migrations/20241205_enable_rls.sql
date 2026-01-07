@@ -165,7 +165,11 @@ USING (
 -- ============================================================================
 
 -- share_token でドキュメントを取得する関数（RLSバイパス）
-CREATE OR REPLACE FUNCTION get_shared_document(p_share_token TEXT)
+-- NOTE: Postgres cannot change the OUT row type with CREATE OR REPLACE.
+-- Drop first so later migrations can safely evolve the return columns.
+DROP FUNCTION IF EXISTS public.get_shared_document(TEXT);
+
+CREATE OR REPLACE FUNCTION public.get_shared_document(p_share_token TEXT)
 RETURNS TABLE (
   id UUID,
   title TEXT,
@@ -173,7 +177,8 @@ RETURNS TABLE (
   raw_content TEXT,
   summary TEXT,
   tags TEXT[],
-  created_at TIMESTAMPTZ
+  created_at TIMESTAMPTZ,
+  share_expires_at TIMESTAMPTZ
 )
 LANGUAGE plpgsql
 SECURITY DEFINER -- RLSをバイパス
@@ -188,15 +193,17 @@ BEGIN
     d.raw_content,
     d.summary,
     d.tags,
-    d.created_at
+    d.created_at,
+    d.share_expires_at
   FROM public.documents d
   WHERE d.share_token = p_share_token
-  AND d.is_archived = FALSE;
+  AND d.is_archived = FALSE
+  AND (d.share_expires_at IS NULL OR d.share_expires_at > NOW());
 END;
 $$;
 
 -- 関数の実行権限を付与
-GRANT EXECUTE ON FUNCTION get_shared_document(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_shared_document(TEXT) TO anon, authenticated;
 
 -- ============================================================================
 -- 6. Service Role 用のバイパス設定

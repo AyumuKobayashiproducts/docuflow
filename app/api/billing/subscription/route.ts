@@ -1,9 +1,7 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { supabase } from "@/lib/supabaseClient";
-import { PLAN_LIMITS, type SubscriptionPlan } from "@/lib/subscription";
 import { BillingScopeError, getBillingScopeOrThrow } from "@/lib/billingScope";
+import { getAuthedUserId } from "@/lib/authSession";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-06-20",
@@ -13,8 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
  * サブスクリプション情報を取得
  */
 export async function GET(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     return NextResponse.json(
@@ -86,8 +83,7 @@ export async function GET(req: NextRequest) {
  * サブスクリプションを更新（プラン変更、キャンセル、再開など）
  */
 export async function PATCH(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     return NextResponse.json(

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getAuthedUserId } from "@/lib/authSession";
 import {
   generateSummaryAndTags,
   generateTitleFromContent,
@@ -53,8 +53,7 @@ async function fastCreateDocument(formData: FormData) {
   "use server";
 
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     const redirectTo = locale === "en" ? "/new?lang=en" : "/new";
@@ -96,6 +95,18 @@ async function fastCreateDocument(formData: FormData) {
     return;
   }
 
+  // NOTE:
+  // このアプリはサーバー側で「署名付きセッションcookie」を正とした認可を行い、
+  // Supabase の RLS は service_role（supabaseAdmin）でバイパスする設計。
+  // service_role が未設定だと INSERT が RLS で弾かれて保存できない。
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+
   // プラン制限チェック
   const limitCheck = await canCreateDocument(userId, activeOrgId, locale);
   if (!limitCheck.allowed) {
@@ -121,7 +132,7 @@ async function fastCreateDocument(formData: FormData) {
     category = locale === "en" ? "Uncategorized" : "未分類";
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("documents")
     .insert({
       user_id: userId,
@@ -159,8 +170,7 @@ async function createDocument(formData: FormData) {
   "use server";
 
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     const redirectTo = locale === "en" ? "/new?lang=en" : "/new";
@@ -200,6 +210,14 @@ async function createDocument(formData: FormData) {
 
   if (!content) {
     return;
+  }
+
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
   }
 
   // プラン制限チェック
@@ -269,7 +287,7 @@ async function createDocument(formData: FormData) {
     }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("documents")
     .insert({
       user_id: userId,

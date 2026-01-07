@@ -1,13 +1,12 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { supabase } from "@/lib/supabaseClient";
 import type { SubscriptionPlan } from "@/lib/subscription";
 import { getActiveOrganizationId } from "@/lib/organizations";
+import { getAuthedUserId } from "@/lib/authSession";
 
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     return NextResponse.json(
@@ -130,18 +129,17 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const orgCustomerId = (org as any)?.stripe_customer_id as string | null | undefined;
-      const orgSubscriptionId = (org as any)?.stripe_subscription_id as
-        | string
-        | null
-        | undefined;
-      const orgStatus = (org as any)?.subscription_status as
-        | "active"
-        | "trialing"
-        | "past_due"
-        | "canceled"
-        | null
-        | undefined;
+      type OrgBillingRow = {
+        stripe_customer_id: string | null;
+        stripe_subscription_id: string | null;
+        subscription_status: "active" | "trialing" | "past_due" | "canceled" | null;
+        name?: string | null;
+        id: string;
+      };
+      const orgRow = org as unknown as OrgBillingRow;
+      const orgCustomerId = orgRow.stripe_customer_id ?? null;
+      const orgSubscriptionId = orgRow.stripe_subscription_id ?? null;
+      const orgStatus = orgRow.subscription_status ?? null;
 
       // 二重課金の防止：既に有効なサブスクがある場合は Checkout を作らず、ポータルへ誘導
       if (orgCustomerId && orgSubscriptionId && orgStatus && orgStatus !== "canceled") {
@@ -159,8 +157,8 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      metadata.organization_id = org.id;
-      metadata.organization_name = (org as { name?: string | null }).name ?? "";
+      metadata.organization_id = orgRow.id;
+      metadata.organization_name = orgRow.name ?? "";
     } else {
       // 個人プランの場合
       metadata.user_id = userId;
@@ -179,21 +177,15 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const customerId = (userSettings as any)?.stripe_customer_id as
-        | string
-        | null
-        | undefined;
-      const subscriptionId = (userSettings as any)?.stripe_subscription_id as
-        | string
-        | null
-        | undefined;
-      const status = (userSettings as any)?.subscription_status as
-        | "active"
-        | "trialing"
-        | "past_due"
-        | "canceled"
-        | null
-        | undefined;
+      type UserBillingRow = {
+        stripe_customer_id: string | null;
+        stripe_subscription_id: string | null;
+        subscription_status: "active" | "trialing" | "past_due" | "canceled" | null;
+      };
+      const userRow = userSettings as unknown as UserBillingRow | null;
+      const customerId = userRow?.stripe_customer_id ?? null;
+      const subscriptionId = userRow?.stripe_subscription_id ?? null;
+      const status = userRow?.subscription_status ?? null;
 
       // 二重課金の防止：既に有効なサブスクがある場合は Checkout を作らず、ポータルへ誘導
       if (customerId && subscriptionId && status && status !== "canceled") {

@@ -29,10 +29,22 @@ export default function AuthCallbackEnPage() {
           return;
         }
 
-        const userId = data.user.id;
+        const { data: sessionData } = await supabaseBrowser.auth.getSession();
+        const accessToken = sessionData.session?.access_token ?? "";
+        if (!accessToken) {
+          router.replace("/en/auth/login?error=oauth_callback");
+          return;
+        }
 
-        document.cookie = "docuhub_ai_auth=1; path=/;";
-        document.cookie = `docuhub_ai_user_id=${userId}; path=/;`;
+        const resp = await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!resp.ok) {
+          router.replace("/en/auth/login?error=oauth_callback");
+          return;
+        }
+
         setLangCookieEn();
 
         const finalRedirect = redirectTo || "/app?lang=en";

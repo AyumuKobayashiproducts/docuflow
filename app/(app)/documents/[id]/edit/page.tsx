@@ -1,12 +1,13 @@
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateSummaryAndTags } from "@/lib/ai";
 import { logActivity } from "@/lib/activityLog";
 import { getEffectivePlan } from "@/lib/subscription";
 import { ensureAndConsumeAICalls } from "@/lib/aiUsage";
 import { canUseStorage } from "@/lib/subscriptionUsage";
 import { getLocaleFromParam, type Locale } from "@/lib/i18n";
+import { getAuthedUserId } from "@/lib/authSession";
 
 const BYTES_PER_MB = 1024 * 1024;
 
@@ -36,14 +37,22 @@ async function updateDocument(formData: FormData) {
     return;
   }
 
-  const cookieStore = await cookies();
-  const cookieUserId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const cookieUserId = await getAuthedUserId();
   if (!cookieUserId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
 
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+  const db = supabaseAdmin;
+
   // 現在のドキュメントを取得（スコープ判定 / 上限チェック / バージョン保存に使用）
-  const { data: current, error: currentError } = await supabase
+  const { data: current, error: currentError } = await db
     .from("documents")
     .select("id, user_id, organization_id, title, category, raw_content, summary, tags")
     .eq("id", id)
@@ -94,7 +103,7 @@ async function updateDocument(formData: FormData) {
     // バージョン履歴はプラン機能（Freeでは保存しない）
     if (limits.versionHistory) {
       const versionUserId = cookieUserId ?? currentDoc.user_id;
-      await supabase.from("document_versions").insert({
+      await db.from("document_versions").insert({
         document_id: currentDoc.id,
         user_id: versionUserId,
         title: currentDoc.title,
@@ -115,7 +124,7 @@ async function updateDocument(formData: FormData) {
 
   const { summary, tags } = await generateSummaryAndTags(rawContent);
 
-  const { error } = await supabase
+  const { error } = await db
     .from("documents")
     .update({
       title,
@@ -155,8 +164,7 @@ export default async function EditDocumentPage({ params, searchParams }: PagePro
     return `${href}?lang=en`;
   };
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     redirect(
       `/auth/login?redirectTo=${encodeURIComponent(
@@ -165,7 +173,8 @@ export default async function EditDocumentPage({ params, searchParams }: PagePro
     );
   }
 
-  const { data, error } = await supabase
+  const client = supabaseAdmin ?? supabase;
+  const { data, error } = await client
     .from("documents")
     .select("*")
     .eq("id", id)

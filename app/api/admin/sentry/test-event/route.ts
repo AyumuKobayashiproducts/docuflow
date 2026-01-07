@@ -1,6 +1,6 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { captureEvent } from "@/lib/sentry";
+import { getAuthedUserId } from "@/lib/authSession";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +36,7 @@ function inferDomain(action: string): "ops" | "billing" | "org" {
  * - /api/admin/sentry/test-event?action=org.ownership.transferred
  */
 export async function GET(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     return NextResponse.json({ error: "ログインが必要です。" }, { status: 401 });
   }

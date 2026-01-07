@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getAuthedUserId } from "@/lib/authSession";
 import { logActivity } from "@/lib/activityLog";
 import {
   generateSummaryAndTags,
@@ -65,6 +65,17 @@ import {
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
+
+function requireServerDb(locale: Locale) {
+  if (!supabaseAdmin) {
+    throw new Error(
+      locale === "en"
+        ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+        : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    );
+  }
+  return supabaseAdmin;
+}
 
 // Helper: UTC ISO string to JST "YYYY/MM/DD HH:MM"
 function formatJstDateTime(value: string | null): string | null {
@@ -164,15 +175,15 @@ type ActivityLog = {
 async function toggleFavorite(formData: FormData) {
   "use server";
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const db = requireServerDb(locale);
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
   const id = String(formData.get("id") ?? "");
   const next = String(formData.get("next") ?? "") === "true";
   if (!id) return;
-  const { error } = await supabase
+  const { error } = await db
     .from("documents")
     .update({ is_favorite: next })
     .eq("id", id)
@@ -185,15 +196,15 @@ async function toggleFavorite(formData: FormData) {
 async function togglePinned(formData: FormData) {
   "use server";
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const db = requireServerDb(locale);
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
   const id = String(formData.get("id") ?? "");
   const next = String(formData.get("next") ?? "") === "true";
   if (!id) return;
-  const { error } = await supabase
+  const { error } = await db
     .from("documents")
     .update({ is_pinned: next })
     .eq("id", id)
@@ -206,15 +217,15 @@ async function togglePinned(formData: FormData) {
 async function deleteDocumentFromList(formData: FormData) {
   "use server";
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const db = requireServerDb(locale);
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
   const id = String(formData.get("id") ?? "").trim();
   const title = String(formData.get("title") ?? "").trim() || null;
   if (!id) return;
-  const { error } = await supabase
+  const { error } = await db
     .from("documents")
     .delete()
     .eq("id", id)
@@ -231,8 +242,8 @@ async function deleteDocumentFromList(formData: FormData) {
 async function toggleArchivedFromList(formData: FormData) {
   "use server";
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const db = requireServerDb(locale);
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
@@ -240,7 +251,7 @@ async function toggleArchivedFromList(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim() || null;
   const next = String(formData.get("next") ?? "") === "true";
   if (!id) return;
-  const { error } = await supabase
+  const { error } = await db
     .from("documents")
     .update({ is_archived: next })
     .eq("id", id)
@@ -259,21 +270,21 @@ async function toggleArchivedFromList(formData: FormData) {
 async function deleteDocumentsBulk(formData: FormData) {
   "use server";
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     throw new Error(locale === "en" ? "Please log in." : "ログインしてください。");
   }
+  const db = requireServerDb(locale);
   const selectedIds = formData.getAll("ids").map((v) => String(v).trim()).filter((v) => v.length > 0);
   const allIds = formData.getAll("allIds").map((v) => String(v).trim()).filter((v) => v.length > 0);
   const ids = (selectedIds.length > 0 ? selectedIds : allIds).filter((v, idx, arr) => v.length > 0 && arr.indexOf(v) === idx);
   if (ids.length === 0) return;
-  const { data: docs } = await supabase
+  const { data: docs } = await db
     .from("documents")
     .select("id, title")
     .eq("user_id", userId)
     .in("id", ids);
-  const { error } = await supabase
+  const { error } = await db
     .from("documents")
     .delete()
     .eq("user_id", userId)
@@ -296,13 +307,13 @@ async function deleteDocumentsBulk(formData: FormData) {
 async function createDocumentFromFileOnDashboard(formData: FormData) {
   "use server";
   const locale: Locale = getLocaleFromParam(String(formData.get("lang") ?? ""));
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) {
     const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
     const redirectTo = locale === "en" ? "/app?lang=en" : "/app";
     redirect(`${loginPath}?redirectTo=${encodeURIComponent(redirectTo)}`);
   }
+  const db = requireServerDb(locale);
   const activeOrgId = await getActiveOrganizationId(userId);
   const filesFromForm = formData.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
   const fallbackFile = formData.get("file");
@@ -362,7 +373,7 @@ async function createDocumentFromFileOnDashboard(formData: FormData) {
       category = locale === "en" ? "Uncategorized" : "未分類";
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("documents")
       .insert({ user_id: userId, organization_id: activeOrgId, title, category, raw_content: content, summary, tags, is_favorite: false, is_pinned: false })
       .select("id");
@@ -384,8 +395,7 @@ async function switchOrganization(formData: FormData) {
   "use server";
   const organizationId = String(formData.get("organizationId") ?? "").trim();
   if (!organizationId) return;
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) return;
   await setActiveOrganization(userId, organizationId);
   revalidatePath("/app");
@@ -401,8 +411,7 @@ async function markNotificationReadAction(formData: FormData) {
 
 async function markAllNotificationsReadAction() {
   "use server";
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
   if (!userId) return;
   await markAllNotificationsRead(userId);
   revalidatePath("/app");
@@ -439,14 +448,7 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
       return `${href}?${langQuery}`;
     };
 
-    let cookieStore;
-    try {
-      cookieStore = await cookies();
-    } catch (cookieError) {
-      console.error("[Dashboard] cookies() error:", cookieError);
-      throw new Error("Failed to access cookies");
-    }
-    const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+    const userId = await getAuthedUserId();
 
     // Organization data
     let memberships: Awaited<ReturnType<typeof getUserOrganizations>> = [];
@@ -474,7 +476,8 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     // Documents query
     let data: Document[] | null = null;
     try {
-      let documentsQuery = supabase.from("documents").select("*").order("created_at", { ascending: sort === "asc" });
+      const db = requireServerDb(locale);
+      let documentsQuery = db.from("documents").select("*").order("created_at", { ascending: sort === "asc" });
       if (userId) documentsQuery = documentsQuery.eq("user_id", userId);
       if (activeOrgId) documentsQuery = documentsQuery.eq("organization_id", activeOrgId);
       documentsQuery = documentsQuery.eq("is_archived", showArchived);
@@ -508,7 +511,8 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     let recentActivities: ActivityLog[] = [];
     if (userId) {
       try {
-        const { data: activityData, error: activityError } = await supabase
+        const db = requireServerDb(locale);
+        const { data: activityData, error: activityError } = await db
           .from("activity_logs")
           .select("id, action, document_id, document_title, created_at")
           .eq("user_id", userId)
@@ -547,8 +551,9 @@ export default async function Dashboard({ searchParams }: DashboardProps) {
     const commentCountMap = new Map<string, number>();
     if (allDocuments.length > 0) {
       try {
+        const db = requireServerDb(locale);
         const documentIds = allDocuments.map((d) => d.id);
-        const { data: comments } = await supabase.from("document_comments").select("document_id").in("document_id", documentIds);
+        const { data: comments } = await db.from("document_comments").select("document_id").in("document_id", documentIds);
         if (comments) {
           for (const row of comments as { document_id: string | null }[]) {
             if (!row.document_id) continue;

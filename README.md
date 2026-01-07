@@ -161,6 +161,12 @@ npm ci
 
 ※ `SUPABASE_SERVICE_ROLE_KEY` が無い場合でもアプリは動きますが、**共有閲覧ログ（`share_access_logs`）の記録/閲覧**は無効化されます。
 
+#### `.env.local` の作り方（コピペ）
+
+```bash
+cp docs/env.example .env.local
+```
+
 ### 3) SupabaseのSQLを適用
 
 - `supabase/migrations/` を Supabase Dashboard の **SQL Editor** で適用

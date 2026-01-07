@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { BillingScopeError, getBillingScopeOrThrow } from "@/lib/billingScope";
+import { getAuthedUserId } from "@/lib/authSession";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2024-06-20",
@@ -11,8 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
  * 請求履歴を取得
  */
 export async function GET(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     return NextResponse.json(
@@ -52,8 +51,7 @@ export async function GET(req: NextRequest) {
  * 請求書をダウンロード
  */
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     return NextResponse.json(

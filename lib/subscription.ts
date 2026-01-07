@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { supabaseAdmin } from "./supabaseAdmin";
 
 /**
  * サブスクリプションプラン定義
@@ -387,14 +388,27 @@ export async function canCreateDocument(
     return { allowed: true };
   }
 
+  // NOTE:
+  // サーバー側では service_role（supabaseAdmin）でRLSをバイパスして集計する。
+  // 未設定だとRLSでcount取得が失敗しやすいので、明示的に案内する。
+  if (!supabaseAdmin) {
+    return {
+      allowed: false,
+      reason:
+        locale === "en"
+          ? "Server configuration is incomplete. Please set SUPABASE_SERVICE_ROLE_KEY and restart the server."
+          : "サーバー設定が未完了です。SUPABASE_SERVICE_ROLE_KEY を .env.local に設定して、サーバーを再起動してください。",
+    };
+  }
+
   // 現在のドキュメント数を取得
   const query = organizationId
-    ? supabase
+    ? supabaseAdmin
         .from("documents")
         .select("id", { count: "exact", head: true })
         .eq("organization_id", organizationId)
         .eq("is_archived", false)
-    : supabase
+    : supabaseAdmin
         .from("documents")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)

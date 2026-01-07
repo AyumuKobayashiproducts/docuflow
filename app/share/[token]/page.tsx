@@ -22,12 +22,6 @@ export default async function PublicSharePage({
   const { token } = await params;
   const sp = await searchParams;
   const locale: Locale = getLocaleFromParam(sp?.lang);
-  const withLang = (href: string) => {
-    if (locale !== "en") return href;
-    if (href.includes("lang=en")) return href;
-    if (href.includes("?")) return `${href}&lang=en`;
-    return `${href}?lang=en`;
-  };
 
   const { data, error } = await supabase
     .from("documents")

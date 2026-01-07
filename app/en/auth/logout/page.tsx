@@ -7,9 +7,18 @@ export default function LogoutEnPage() {
   const router = useRouter();
 
   useEffect(() => {
-    document.cookie = "docuhub_ai_auth=; path=/; max-age=0";
-    document.cookie = "docuhub_ai_user_id=; path=/; max-age=0";
-    router.replace("/en/auth/login");
+    let active = true;
+    (async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } finally {
+        if (!active) return;
+        router.replace("/en/auth/login");
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [router]);
 
   return (

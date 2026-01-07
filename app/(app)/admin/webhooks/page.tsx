@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getPreferredLocale } from "@/lib/serverLocale";
+import { getAuthedUserId } from "@/lib/authSession";
 
 type WebhookEventRow = {
   id: string;
@@ -30,8 +30,7 @@ export default async function AdminStripeWebhooksPage() {
     return `${href}?lang=en`;
   };
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("docuhub_ai_user_id")?.value ?? null;
+  const userId = await getAuthedUserId();
 
   if (!userId) {
     const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";

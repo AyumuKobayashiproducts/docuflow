@@ -27,11 +27,23 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        const userId = data.user.id;
+        const { data: sessionData } = await supabaseBrowser.auth.getSession();
+        const accessToken = sessionData.session?.access_token ?? "";
+        if (!accessToken) {
+          const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
+          router.replace(`${loginPath}?error=oauth_callback`);
+          return;
+        }
 
-        // アプリ独自の認証クッキーを設定（middleware 用）
-        document.cookie = "docuhub_ai_auth=1; path=/;";
-        document.cookie = `docuhub_ai_user_id=${userId}; path=/;`;
+        const resp = await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!resp.ok) {
+          const loginPath = locale === "en" ? "/en/auth/login" : "/auth/login";
+          router.replace(`${loginPath}?error=oauth_callback`);
+          return;
+        }
 
         const defaultRedirect = locale === "en" ? "/app?lang=en" : "/app";
         const finalRedirect = redirectTo || defaultRedirect;
