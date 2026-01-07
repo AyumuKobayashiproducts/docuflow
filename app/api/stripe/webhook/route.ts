@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
       // Duplicate key: already processed/processing → 冪等に 200
       const code =
         typeof insertErr === "object" && insertErr !== null
-          ? ((insertErr as Record<string, unknown>).code as unknown)
+          ? (((insertErr as unknown) as Record<string, unknown>).code as unknown)
           : null;
       if (code === "23505") {
         const { data: existing } = await supabaseAdmin
